@@ -61,6 +61,7 @@ class Melanoma(torch.utils.data.Dataset):
            column called label."""
 
         label = None
+        ### Ian to the rescue! Setting label = None will lead to errors###
         """ It seems like you cannot use label = None as when you initiate DataLoader, the collate function inside expects anything
         inside to be numpy or tensor form, which label is not; So I set label to be tensor[0] and if we are in train mode, it will overwrite anyways."""
         label = torch.zeros(1)

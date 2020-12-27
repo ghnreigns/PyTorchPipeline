@@ -30,11 +30,13 @@ class GlobalConfig:
     # optimizer
     optimizer = "AdamW"
     optimizer_params = {
-        "AdamW": {"lr": 0.001, "betas": (0.9, 0.999), "eps": 1e-08, "weight_decay": 0.001, "amsgrad": False}
+        "AdamW": {"lr": 1e-4, "betas": (0.9, 0.999), "eps": 1e-08, "weight_decay": 1e-6, "amsgrad": False},
+        "Adam": {"lr": 1e-4, "betas": (0.9, 0.999), "eps": 1e-08, "weight_decay": 1e-6, "amsgrad": False},
     }
 
     # criterion
     criterion = "CrossEntropyLoss"
+    criterion_val = "CrossEntropyLoss"
     criterion_params = {
         "CrossEntropyLoss": {
             "weight": None,
@@ -42,12 +44,14 @@ class GlobalConfig:
             "ignore_index": -100,
             "reduce": None,
             "reduction": "mean",
-        }
+        },
+        "LabelSmoothingLoss": {"classes": 2, "smoothing": 0.05, "dim": -1},
+        "FocalCosineLoss": {"alpha": 1, "gamma": 2, "xent": 0.1},
     }
 
     image_size = 256
     resize = 256
-    crop_size = {128: 110, 256: 200, 512: 400}
+    crop_size = {128: 110, 256: 200, 384: 320, 512: 400}
     verbose = 1
     verbose_step = 1
     num_folds = 5
@@ -57,10 +61,10 @@ class GlobalConfig:
         "train_path": "/content/train/",
         "test_path": "../input/siim-isic-melanoma-classification/jpeg/test",
         "csv_path": "/content/drive/My Drive/KAGGLE-MELANOMA/siim-isic-melanoma-classification/train.csv",
-        "log_path": "./log.text",
+        "log_path": "./log.txt",
         "save_path": "/content/drive/My Drive/KAGGLE-MELANOMA/weights/tf_effnet_b2_ns",
         "model_weight_path_folder": "/content/drive/My Drive/pretrained-effnet-weights",
     }
 
     effnet = "tf_efficientnet_b2_ns"
-    device = "cuda"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

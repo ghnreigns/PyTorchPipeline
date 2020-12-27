@@ -13,12 +13,15 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 
+from metrics import multiclass_roc, get_acc_score, get_roc_score
+from cross_validate import make_folds
 from dataset import Melanoma
 from models import CustomEfficientNet
 from config import YAMLConfig
 from transforms import get_transforms
 from meters import AverageLossMeter, AccuracyMeter
 from utils import seed_all, seed_worker
+from loss import LabelSmoothingLoss
 
 
 class Trainer:
@@ -38,6 +41,9 @@ class Trainer:
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
+        # Uncomment this if needed to use different val loss #
+        # self.criterion = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
+        # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
         self.criterion = getattr(torch.nn, config.criterion)(**config.criterion_params[config.criterion])
         self.optimizer = getattr(torch.optim, config.optimizer)(
             self.model.parameters(), **config.optimizer_params[config.optimizer]
@@ -50,7 +56,7 @@ class Trainer:
         self.val_predictions = None
         self.monitored_metrics = None
         # https://stackoverflow.com/questions/1398674/display-the-time-in-a-different-time-zone
-        self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d %H-%M-%S")
+        self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
 
         self.log("Trainer prepared. We are using {} device.".format(self.config.device))
 
@@ -62,7 +68,7 @@ class Trainer:
             # Getting the learning rate after each epoch!
             lr = self.optimizer.param_groups[0]["lr"]
 
-            timestamp = self.date
+            timestamp = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d %H-%M-%S")
             # printing the lr and the timestamp after each epoch.
             self.log("\n{}\nLR: {}".format(timestamp, lr))
 
@@ -374,10 +380,9 @@ class Trainer:
         """
         val_gt_label_list, val_preds_softmax_list, val_preds_roc_list, val_preds_argmax_list = [], [], [], []
 
-        # Looping through val loader for one epoch, steps is the
-        # number of times to go through each epoch; with
-        # torch.no_grad(): off gradients for torch when validating
-        # because we do not need to store gradients for each logits.
+        """Looping through val loader for one epoch, steps is the number of times to go through each epoch;
+         with torch.no_grad(): off gradients for torch when validating because we do not need to store gradients for each logits."""
+
         with torch.no_grad():
             for step, (_image_ids, images, labels) in enumerate(val_loader):
 
@@ -386,6 +391,10 @@ class Trainer:
                 batch_size = images.shape[0]
 
                 logits = self.model(images)
+
+                """Depending on your loss function, you might need to adjust the loss function during validation. If you use `CrossEntropyLoss`
+                   then one can use both for train and val, but if you use a custom loss like `LabelSmoothingLoss`, then it's good to use them separately,
+                   as in inferencing, the loss won't be label smoothed, so to gain an accurate cv, do as above."""
                 loss = self.criterion(input=logits, target=labels)
                 summary_loss.update(loss.item(), batch_size)
                 """ We have covered these in train_one_epoch, here is a quick recap
@@ -561,54 +570,6 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     return val_df
 
 
-def multiclass_roc(y_true, y_preds_softmax_array, config):
-    label_dict = dict()
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    roc_scores = []
-    for label_num in range(len(config.class_list)):
-
-        # get y_true_multilabel binarized version for each loop (end of each epoch)
-        y_true_multiclass_array = sklearn.preprocessing.label_binarize(y_true, classes=config.class_list)
-        y_true_for_curr_class = y_true_multiclass_array[:, label_num]
-        y_preds_for_curr_class = y_preds_softmax_array[:, label_num]
-        # calculate fpr,tpr and thresholds across various decision thresholds
-        # pos_label = 1 because one hot encode guarantees it
-        fpr[label_num], tpr[label_num], _ = sklearn.metrics.roc_curve(
-            y_true=y_true_for_curr_class, y_score=y_preds_for_curr_class, pos_label=1
-        )
-        roc_auc[label_num] = sklearn.metrics.auc(fpr[label_num], tpr[label_num])
-        roc_scores.append(roc_auc[label_num])
-        # if binary class, the one hot encode will (n_samples,1) and therefore will only need to slice [:,0] ONLY.
-        # that is why usually for binary class, we do not need to use this piece of code, just for testing purposes.
-        # However, it will now treat our 0 (negative class) as positive, hence returning the roc for 0, in which case
-        # to get both 0 and 1, you just need to use 1-roc(0)value
-        if config.num_classes == 2:
-            roc_auc[config.class_list[1]] = 1 - roc_auc[label_num]
-            return roc_auc, roc_scores
-            break
-    avg_roc_score = np.mean(roc_scores)
-    return roc_auc, avg_roc_score
-
-
-def get_acc_score(config, result_df):
-    """Get the accuracy of model predictions."""
-    preds = result_df["preds"].values
-    labels = result_df[config.class_col_name].values
-    score = sklearn.metrics.accuracy_score(y_true=labels, y_pred=preds)
-    return score
-
-
-def get_roc_score(config, result_df):
-    """Get the roc score of model predictions. max_label is needed for binary classification."""
-    max_label = str(np.max(result_df[config.class_col_name].values))
-    preds = result_df[max_label].values
-    labels = result_df[config.class_col_name].values
-    score = sklearn.metrics.roc_auc_score(y_true=labels, y_score=preds)
-    return score
-
-
 def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_fold=False):
     """Perform the training loop on all folds."""
     # here The CV score is the average of the validation fold metric.
@@ -617,7 +578,7 @@ def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_f
     if train_one_fold:
         _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold_num)
         curr_fold_best_score = get_result(config, _oof_df)
-        print("Fold {} OOF Score is {}".format(fold_num + 1, curr_fold_best_score))
+        print("Fold {} OOF Score is {}".format(fold_num, curr_fold_best_score))
     else:
         """The below for loop code guarantees fold starts from 1 and not 0. https://stackoverflow.com/questions/33282444/pythonic-way-to-iterate-through-a-range-starting-at-1"""
         for fold in (number + 1 for number in range(config.num_folds)):
@@ -631,22 +592,6 @@ def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_f
     print("Variance", np.var(cv_score_list))
     print("Five Folds OOF", get_roc(config, oof_df))
     oof_df.to_csv("oof.csv")
-
-
-def make_folds(train_csv: pd.DataFrame, config, cv_schema=None) -> pd.DataFrame:
-    """Split the given dataframe into training folds."""
-    # TODO: add options for cv_scheme.
-    df_folds = train_csv.copy()
-    skf = StratifiedKFold(5, shuffle=True, random_state=config.seed)
-
-    for fold, (train_idx, val_idx) in enumerate(
-        skf.split(X=df_folds[config.image_col_name], y=df_folds[config.class_col_name])
-    ):
-        df_folds.loc[val_idx, "fold"] = int(fold + 1)
-    df_folds["fold"] = df_folds["fold"].astype(int)
-    print(df_folds.groupby(["fold", config.class_col_name]).size())
-
-    return df_folds
 
 
 if __name__ == "__main__":

@@ -1,11 +1,15 @@
 """A module for constructing machine learning models."""
 import torch.nn as nn
-
-
 import sys
 
 sys.path.insert(0, "./gen-efficientnet-pytorch-master-hongnan")
 import geffnet
+
+######For Ian#########
+"""
+I want to be slightly more versatile, as some people uses geffnet, some uses timm from the same author;
+Should I add a simpe if-else clause here?
+"""
 
 
 class CustomEfficientNet(nn.Module):

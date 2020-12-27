@@ -43,6 +43,62 @@ class TorchToolBoxTransforms(Augmentation):
         return transformed_image
 
 
+######For Ian#########
+"""Technically, this seems more elegant, but KIV on where to put augment_config"""
+
+
+class augment_config:
+    train_augmentations = [
+        torchvision.transforms.RandomHorizontalFlip(),
+        torchvision.transforms.RandomVerticalFlip(),
+        AutoAugment(),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+
+    val_augmentations = [
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+
+    test_augmentations = [
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+
+
+"""This function is exactly the same as the one below"""
+
+
+def get_transforms_torchvision(config):
+    transforms_train = torchvision.transforms.Compose([*augment_config.train_augmentations])
+
+    transforms_val = torchvision.transforms.Compose([*augment_config.val_augmentations])
+
+    return transforms_train, transforms_val
+
+
+def get_transforms_torchvision(config):
+    transforms_train = torchvision.transforms.Compose(
+        [
+            torchvision.transforms.RandomHorizontalFlip(),
+            torchvision.transforms.RandomVerticalFlip(),
+            AutoAugment(),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    transforms_val = torchvision.transforms.Compose(
+        [
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    return transforms_train, transforms_val
+
+
 def get_albu_transforms(config):
     transforms_train = albumentations.Compose(
         [
@@ -64,27 +120,6 @@ def get_albu_transforms(config):
             ToTensorV2(p=1.0),
         ],
         p=1.0,
-    )
-
-    return transforms_train, transforms_val
-
-
-def get_transforms_torchvision(config):
-    transforms_train = torchvision.transforms.Compose(
-        [
-            torchvision.transforms.RandomHorizontalFlip(),
-            torchvision.transforms.RandomVerticalFlip(),
-            AutoAugment(),
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-
-    transforms_val = torchvision.transforms.Compose(
-        [
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
     )
 
     return transforms_train, transforms_val

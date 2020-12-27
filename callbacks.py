@@ -11,10 +11,6 @@ class EarlyStopping:
 
     """Class for Early Stopping."""
 
-    # Review Comments:
-    #
-    # You may want to investigate using Python's built-in Enum class
-    # instead (see https://docs.python.org/3.6/library/enum.html).
     mode_dict = {"min": np.inf, "max": -np.inf}
 
     def __init__(self, patience: int = 5, mode: Mode = Mode.MIN, min_delta: float = 1e-5):
@@ -37,10 +33,8 @@ class EarlyStopping:
         self.best_score = mode.value
 
     def improvement(self, curr_epoch_score: Union[float, int], curr_best_score: Union[float, int]):
-        # bool_flag = False, consider the reset bool_flag = True trick
         if self.mode == Mode.MIN:
             return curr_epoch_score <= (curr_best_score - self.min_delta)
-
         return curr_epoch_score >= (curr_best_score + self.min_delta)
 
     @property
@@ -57,13 +51,11 @@ class EarlyStopping:
 
             rmb false or true --> true, one is true is enough in boolean logic in or clause.
         """
-        # may not need if self.best_score is None or etc
 
         if self.improvement(curr_epoch_score=curr_epoch_score, curr_best_score=self.best_score):
 
             # update self.best_score
             self.best_score = curr_epoch_score
-            # self.checkpoint_model(model=model, model_path=model_path)
 
         else:
             self.stopping_counter += 1
@@ -76,8 +68,9 @@ class EarlyStopping:
                 "save the model since the metric has not improved for {} "
                 "epochs".format(self.patience)
             )
-            # set flag to true, and in Trainer class, one this is
-            # true, stop training.LOL
+
+            """self.early_stop flag is set to true, this will guarantee in the Trainer script, the training will break
+            out of the loop"""
             self.early_stop = True
 
         return self.best_score, self.early_stop
