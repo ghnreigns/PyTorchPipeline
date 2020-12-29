@@ -16,18 +16,16 @@ import torch.nn as nn
 from metrics import multiclass_roc, get_acc_score, get_roc_score
 from cross_validate import make_folds
 from dataset import Melanoma
-from models import CustomEfficientNet
+from model import CustomEfficientNet
 from config import YAMLConfig
-from transforms import get_transforms
+import transforms
 from meters import AverageLossMeter, AccuracyMeter
 from utils import seed_all, seed_worker
 from loss import LabelSmoothingLoss
 
 
 class Trainer:
-
     """A class to perform model training."""
-
     def __init__(self, model, config, early_stopping=None):
         """Construct a Trainer instance."""
         self.model = model
@@ -44,31 +42,37 @@ class Trainer:
         # Uncomment this if needed to use different val loss #
         # self.criterion = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
         # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
-        self.criterion = getattr(torch.nn, config.criterion)(**config.criterion_params[config.criterion])
+        self.criterion = getattr(
+            torch.nn,
+            config.criterion)(**config.criterion_params[config.criterion])
         self.optimizer = getattr(torch.optim, config.optimizer)(
-            self.model.parameters(), **config.optimizer_params[config.optimizer]
-        )
+            self.model.parameters(),
+            **config.optimizer_params[config.optimizer])
         self.scheduler = getattr(torch.optim.lr_scheduler, config.scheduler)(
-            optimizer=self.optimizer, **config.scheduler_params[config.scheduler]
-        )
+            optimizer=self.optimizer,
+            **config.scheduler_params[config.scheduler])
 
         # Good habit to initiate an attribute with None and use it later on.
         self.val_predictions = None
         self.monitored_metrics = None
         # https://stackoverflow.com/questions/1398674/display-the-time-in-a-different-time-zone
-        self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
+        self.date = datetime.datetime.now(
+            pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
 
-        self.log("Trainer prepared. We are using {} device.".format(self.config.device))
+        self.log("Trainer prepared. We are using {} device.".format(
+            self.config.device))
 
     def fit(self, train_loader, val_loader, fold: int):
         """Fit the model on the given fold."""
-        self.log("Training on Fold {} and using {}".format(fold, config.effnet))
+        self.log("Training on Fold {} and using {}".format(
+            fold, self.config.effnet))
 
         for _epoch in range(self.config.n_epochs):
             # Getting the learning rate after each epoch!
             lr = self.optimizer.param_groups[0]["lr"]
 
-            timestamp = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d %H-%M-%S")
+            timestamp = datetime.datetime.now(
+                pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d %H-%M-%S")
             # printing the lr and the timestamp after each epoch.
             self.log("\n{}\nLR: {}".format(timestamp, lr))
 
@@ -76,18 +80,19 @@ class Trainer:
             train_start_time = time.time()
 
             # train one epoch on the training set
-            avg_train_loss, avg_train_acc_score = self.train_one_epoch(train_loader)
+            avg_train_loss, avg_train_acc_score = self.train_one_epoch(
+                train_loader)
             # end time of training on the training set
             train_end_time = time.time()
 
             # formatting time to make it nicer
-            train_elapsed_time = time.strftime("%H:%M:%S", time.gmtime(train_end_time - train_start_time))
+            train_elapsed_time = time.strftime(
+                "%H:%M:%S", time.gmtime(train_end_time - train_start_time))
             self.log(
                 "[RESULT]: Train. Epoch {} | Avg Train Summary Loss: {:.6f} | "
                 "Train Accuracy: {:6f} | Time Elapsed: {}".format(
-                    self.epoch + 1, avg_train_loss, avg_train_acc_score, train_elapsed_time
-                )
-            )
+                    self.epoch + 1, avg_train_loss, avg_train_acc_score,
+                    train_elapsed_time))
 
             val_start_time = time.time()
             # note here has val predictions... in actual fact it is repeated because it's the same as avg_val_acc_score
@@ -100,33 +105,35 @@ class Trainer:
             ) = self.valid_one_epoch(val_loader)
             self.val_predictions = val_predictions
             val_end_time = time.time()
-            val_elapsed_time = time.strftime("%H:%M:%S", time.gmtime(val_end_time - val_start_time))
+            val_elapsed_time = time.strftime(
+                "%H:%M:%S", time.gmtime(val_end_time - val_start_time))
 
             self.log(
                 "[RESULT]: Validation. Epoch: {} | "
                 "Avg Validation Summary Loss: {:.6f} | "
-                "Validation Accuracy: {:.6f} | Validation ROC: {:.6f} | MultiClass ROC: {} | Time Elapsed: {}".format(
+                "Validation Accuracy: {:.6f} | Validation ROC: {:.6f} | MultiClass ROC: {} | Time Elapsed: {}"
+                .format(
                     self.epoch + 1,
                     avg_val_loss,
                     avg_val_acc_score,
                     val_roc_auc,
                     multi_class_roc_auc_score,
                     val_elapsed_time,
-                )
-            )
-
+                ))
             """This flag is used in early stopping and scheduler.step() to let user know which metric we are monitoring."""
             self.monitored_metrics = val_roc_auc
 
             if self.early_stopping is not None:
-                best_score, early_stop = self.early_stopping.should_stop(curr_epoch_score=self.monitored_metrics)
+                best_score, early_stop = self.early_stopping.should_stop(
+                    curr_epoch_score=self.monitored_metrics)
                 """
                 Be careful of self.best_loss here, when our monitered_metrics is val_roc_auc, then we should instead write
                 self.best_auc = best_score. After which, if early_stop flag becomes True, then we break out of the training loop.
                 """
 
                 self.best_loss = best_score
-                self.save("{}_best_fold_{}.pt".format(self.config.effnet, fold))
+                self.save("{}_best_fold_{}.pt".format(self.config.effnet,
+                                                      fold))
                 if early_stop:
                     break
 
@@ -144,16 +151,16 @@ class Trainer:
                 self.save(
                     os.path.join(
                         self.save_path,
-                        "{}_{}_best_auc_fold_{}.pt".format(self.date, self.config.effnet, fold),
-                    )
-                )
-
+                        "{}_{}_best_auc_fold_{}.pt".format(
+                            self.date, self.config.effnet, fold),
+                    ))
             """
             Usually, we should call scheduler.step() after the end of each epoch. In particular, we need to take note that
             ReduceLROnPlateau needs to step(monitered_metrics) because of the mode argument.
             """
             if self.config.val_step_scheduler:
-                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                if isinstance(self.scheduler,
+                              torch.optim.lr_scheduler.ReduceLROnPlateau):
                     self.scheduler.step(self.monitored_metrics)
                 else:
                     self.scheduler.step()
@@ -165,8 +172,10 @@ class Trainer:
         # fold/model, therefore we can call the final "best weight
         # saved" by this exact name that we saved earlier on.
         curr_fold_best_checkpoint = self.load(
-            os.path.join(self.save_path, "{}_{}_best_auc_fold_{}.pt".format(self.date, self.config.effnet, fold))
-        )
+            os.path.join(
+                self.save_path,
+                "{}_{}_best_auc_fold_{}.pt".format(self.date,
+                                                   self.config.effnet, fold)))
         # return the checkpoint for further usage.
         return curr_fold_best_checkpoint
 
@@ -181,7 +190,6 @@ class Trainer:
 
         # timer
         start_time = time.time()
-
         """ Looping through train loader for one epoch, steps is the number of times to go through each epoch"""
         for step, (_image_ids, images, labels) in enumerate(train_loader):
             """1. images, labels: Moving image and label tensors to self.device,
@@ -209,7 +217,6 @@ class Trainer:
 
             images = images.to(self.config.device)
             labels = labels.to(self.config.device)
-
             """1. batch_size:
             There is a catch here, one should never use batch_size =
             config.batch_size in this loop. The logic is if we have 30
@@ -252,7 +259,6 @@ class Trainer:
                                       [ 0.0496,  0.0059]], device='cuda:0',
                                      grad_fn=<AddmmBackward>)
             """
-
             logits = self.model(images)
             """1. loss: criterion in this case is torch.nn.CrossEntropyLoss(),
             which is a loss function where we pass in raw logits and
@@ -318,7 +324,8 @@ class Trainer:
             """
 
             y_true = labels.cpu().numpy()
-            softmax_preds = torch.nn.Softmax(dim=1)(input=logits).to("cpu").detach().numpy()
+            softmax_preds = torch.nn.Softmax(dim=1)(
+                input=logits).to("cpu").detach().numpy()
             y_preds = np.argmax(a=softmax_preds, axis=1)
 
             accuracy_scores.update(y_true, y_preds, batch_size=batch_size)
@@ -379,7 +386,6 @@ class Trainer:
                     [0.51905555 0.4809445 ]]   (4,2)
         """
         val_gt_label_list, val_preds_softmax_list, val_preds_roc_list, val_preds_argmax_list = [], [], [], []
-
         """Looping through val loader for one epoch, steps is the number of times to go through each epoch;
          with torch.no_grad(): off gradients for torch when validating because we do not need to store gradients for each logits."""
 
@@ -391,7 +397,6 @@ class Trainer:
                 batch_size = images.shape[0]
 
                 logits = self.model(images)
-
                 """Depending on your loss function, you might need to adjust the loss function during validation. If you use `CrossEntropyLoss`
                    then one can use both for train and val, but if you use a custom loss like `LabelSmoothingLoss`, then it's good to use them separately,
                    as in inferencing, the loss won't be label smoothed, so to gain an accurate cv, do as above."""
@@ -412,7 +417,8 @@ class Trainer:
                 """
 
                 y_true = labels.cpu().numpy()
-                softmax_preds = torch.nn.Softmax(dim=1)(input=logits).to("cpu").numpy()
+                softmax_preds = torch.nn.Softmax(dim=1)(
+                    input=logits).to("cpu").numpy()
                 positive_class_preds = softmax_preds[:, 1]
                 y_preds = np.argmax(a=softmax_preds, axis=1)
                 accuracy_scores.update(y_true, y_preds, batch_size=batch_size)
@@ -478,15 +484,19 @@ class Trainer:
             """
 
             val_gt_label_array = np.concatenate(val_gt_label_list, axis=0)
-            val_preds_softmax_array = np.concatenate(val_preds_softmax_list, axis=0)
-            val_preds_argmax_array = np.concatenate(val_preds_argmax_list, axis=0)
+            val_preds_softmax_array = np.concatenate(val_preds_softmax_list,
+                                                     axis=0)
+            val_preds_argmax_array = np.concatenate(val_preds_argmax_list,
+                                                    axis=0)
             val_preds_roc_array = np.concatenate(val_preds_roc_list, axis=0)
 
-            val_roc_auc_score = sklearn.metrics.roc_auc_score(y_true=val_gt_label_array, y_score=val_preds_roc_array)
+            val_roc_auc_score = sklearn.metrics.roc_auc_score(
+                y_true=val_gt_label_array, y_score=val_preds_roc_array)
             # DEPENDS ON Binary or Multiclass
             multi_class_roc_auc_score, _ = multiclass_roc(
-                y_true=val_gt_label_array, y_preds_softmax_array=val_preds_softmax_array, config=self.config
-            )
+                y_true=val_gt_label_array,
+                y_preds_softmax_array=val_preds_softmax_array,
+                config=self.config)
 
         return (
             summary_loss.avg,
@@ -537,7 +547,12 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     model = CustomEfficientNet(config=config, pretrained=True)
     model.to(config.device)
 
-    transforms_train, transforms_val = get_transforms_torchvision(config)
+    augmentations_class = getattr(transforms, config.augmentations_class)
+
+    transforms_train = augmentations_class.from_config(
+        config.augmentations_train[config.augmentations_class])
+    transforms_val = augmentations_class.from_config(
+        config.augmentations_val[config.augmentations_class])
 
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
@@ -545,48 +560,64 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     train_set = Melanoma(
         train_df,
         config,
-        transforms=TorchTransforms(transforms=transforms_train),
+        transforms=transforms_train,
         transform_norm=True,
         meta_features=None,
     )
-    train_loader = DataLoader(
-        train_set, batch_size=config.batch_size, shuffle=True, num_workers=4, worker_init_fn=seed_worker
-    )
+    train_loader = DataLoader(train_set,
+                              batch_size=config.batch_size,
+                              shuffle=True,
+                              num_workers=4,
+                              worker_init_fn=seed_worker)
 
-    val_set = Melanoma(
-        val_df, config, transforms=TorchTransforms(transforms=transforms_val), transform_norm=True, meta_features=None
-    )
-    val_loader = DataLoader(
-        val_set, batch_size=config.batch_size, shuffle=False, num_workers=4, worker_init_fn=seed_worker
-    )
+    val_set = Melanoma(val_df,
+                       config,
+                       transforms=transforms_val,
+                       transform_norm=True,
+                       meta_features=None)
+    val_loader = DataLoader(val_set,
+                            batch_size=config.batch_size,
+                            shuffle=False,
+                            num_workers=4,
+                            worker_init_fn=seed_worker)
 
     melanoma_detector = Trainer(model=model, config=config)
 
-    curr_fold_best_checkpoint = melanoma_detector.fit(train_loader, val_loader, fold)
+    curr_fold_best_checkpoint = melanoma_detector.fit(train_loader, val_loader,
+                                                      fold)
 
-    val_df[[str(c) for c in range(config.num_classes)]] = curr_fold_best_checkpoint["oof_preds"]
+    val_df[[str(c) for c in range(config.num_classes)
+            ]] = curr_fold_best_checkpoint["oof_preds"]
     val_df["preds"] = curr_fold_best_checkpoint["oof_preds"].argmax(1)
 
     return val_df
 
 
-def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_fold=False):
+def train_loop(df_folds: pd.DataFrame,
+               config,
+               fold_num: int = None,
+               train_one_fold=False):
     """Perform the training loop on all folds."""
     # here The CV score is the average of the validation fold metric.
     cv_score_list = []
     oof_df = pd.DataFrame()
     if train_one_fold:
-        _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold_num)
+        _oof_df = train_on_fold(df_folds=df_folds,
+                                config=config,
+                                fold=fold_num)
         curr_fold_best_score = get_result(config, _oof_df)
         print("Fold {} OOF Score is {}".format(fold_num, curr_fold_best_score))
     else:
         """The below for loop code guarantees fold starts from 1 and not 0. https://stackoverflow.com/questions/33282444/pythonic-way-to-iterate-through-a-range-starting-at-1"""
         for fold in (number + 1 for number in range(config.num_folds)):
-            _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold)
+            _oof_df = train_on_fold(df_folds=df_folds,
+                                    config=config,
+                                    fold=fold)
             oof_df = pd.concat([oof_df, _oof_df])
             curr_fold_best_score = get_roc(config, _oof_df)
             cv_score_list.append(curr_fold_best_score)
-            print("\n\n\nOOF Score for Fold {}: {}\n\n\n".format(fold, curr_fold_best_score))
+            print("\n\n\nOOF Score for Fold {}: {}\n\n\n".format(
+                fold, curr_fold_best_score))
 
     print("CV score", np.mean(cv_score_list))
     print("Variance", np.var(cv_score_list))
@@ -597,7 +628,7 @@ def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_f
 if __name__ == "__main__":
     yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
-    train_csv = pd.read_csv(yaml_config.csv_path)
-    # folds = make_folds(train_csv, yaml_config)
+    train_csv = pd.read_csv(yaml_config.paths["csv_path"])
+    folds = make_folds(train_csv, yaml_config)
 
     train_single_fold = train_on_fold(folds, yaml_config, fold=1)

@@ -1,12 +1,12 @@
 """Some accuracy meters."""
 import sklearn
+from sklearn.metrics import accuracy_score
 
 
 class AverageLossMeter:
     """
     Computes and stores the average and current loss
     """
-
     def __init__(self):
         self.reset()
 
@@ -21,9 +21,6 @@ class AverageLossMeter:
         self.running_total_loss += curr_batch_avg_loss * batch_size
         self.count += batch_size
         self.avg = self.running_total_loss / self.count
-
-
-from sklearn.metrics import accuracy_score
 
 
 class AccuracyMeter:

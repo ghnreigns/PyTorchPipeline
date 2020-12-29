@@ -6,13 +6,11 @@ import numpy as np
 import pandas as pd
 import torch
 
-from utils import get_file_type
+from utils import check_df_ext, get_file_type
 
 
 class Melanoma(torch.utils.data.Dataset):
-
     """The Melanoma dataset. transforms is now an abstract class"""
-
     def __init__(
         self,
         df: pd.DataFrame,
@@ -33,12 +31,15 @@ class Melanoma(torch.utils.data.Dataset):
 
         if self.transforms is None:
             assert self.transform_norm is False
-            print("Transforms is None and Transform Normalization is not " "initialized!")
+            print("Transforms is None and Transform Normalization is not "
+                  "initialized!")
 
-        self.image_extension = get_file_type(image_folder_path=config.paths["train_path"], allowed_extensions=None)
+        self.image_extension = get_file_type(
+            image_folder_path=config.paths["train_path"],
+            allowed_extensions=None)
 
-        self.df_has_ext = check_df_ext(df=self.df, col_name=config.image_col_name)
-
+        self.df_has_ext = check_df_ext(df=self.df,
+                                       col_name=config.image_col_name)
         """
         This part here says that if the df has extension for all the image name, like each cell has
         image.jpg behind, then we set self.image_extension to empty string so that os.path.join in
@@ -67,25 +68,32 @@ class Melanoma(torch.utils.data.Dataset):
         label = torch.zeros(1)
 
         if self.test:
-            image_path = os.path.join(self.config.paths["test_path"], "{}{}".format(image_id, self.image_extension))
+            image_path = os.path.join(
+                self.config.paths["test_path"],
+                "{}{}".format(image_id, self.image_extension))
         else:
             label = self.df[self.config.class_col_name].values[idx]
             label = torch.as_tensor(data=label, dtype=torch.int64, device=None)
-            image_path = os.path.join(self.config.paths["train_path"], "{}{}".format(image_id, self.image_extension))
+            image_path = os.path.join(
+                self.config.paths["train_path"],
+                "{}{}".format(image_id, self.image_extension))
 
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        if self.transform_norm is False:
+        if self.transform_norm:
             image = image.astype(np.float32) / 255.0
 
         if self.transforms is not None:
             image = self.transforms.augment(image)
         else:
-            image = torch.as_tensor(data=image, dtype=torch.float32, device=None)
+            image = torch.as_tensor(data=image,
+                                    dtype=torch.float32,
+                                    device=None)
 
         if self.meta_features is not None:
-            meta = np.array(self.df.iloc[idx][self.meta_features].values, dtype=np.float32)
+            meta = np.array(self.df.iloc[idx][self.meta_features].values,
+                            dtype=np.float32)
             return image_id, (image, meta), label
 
         return image_id, image, label

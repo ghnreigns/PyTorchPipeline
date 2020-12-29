@@ -1,3 +1,6 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 # ====================================================
 # Label Smoothing
 # ====================================================
@@ -36,13 +39,16 @@ class FocalCosineLoss(nn.Module):
         self.y = torch.Tensor([1]).cuda()
 
     def forward(self, input, target, reduction="mean"):
-        cosine_loss = F.cosine_embedding_loss(
-            input, F.one_hot(target, num_classes=input.size(-1)), self.y, reduction=reduction
-        )
+        cosine_loss = F.cosine_embedding_loss(input,
+                                              F.one_hot(
+                                                  target,
+                                                  num_classes=input.size(-1)),
+                                              self.y,
+                                              reduction=reduction)
 
         cent_loss = F.cross_entropy(F.normalize(input), target, reduce=False)
         pt = torch.exp(-cent_loss)
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * cent_loss
+        focal_loss = self.alpha * (1 - pt)**self.gamma * cent_loss
 
         if reduction == "mean":
             focal_loss = torch.mean(focal_loss)
