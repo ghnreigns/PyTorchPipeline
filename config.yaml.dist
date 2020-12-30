@@ -85,7 +85,7 @@ paths:
   model_weight_path_folder: ./efficientnet-weights
 effnet: tf_efficientnet_b2_ns
 device: auto
-augmentations_class: AlbumentationsAugmentation
+augmentations_class: TorchTransforms
 augmentations_train:
   AlbumentationsAugmentation:
     - name: VerticalFlip
