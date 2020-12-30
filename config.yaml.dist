@@ -3,9 +3,9 @@ num_classes: 2
 class_list:
   - 0
   - 1
-batch_size: 8
+batch_size: 32
 n_epochs: 8
-scheduler: CosineAnnealingWarmRestarts
+scheduler: StepLR
 scheduler_params:
   StepLR:
     step_size: 2
@@ -82,7 +82,7 @@ paths:
   csv_path: ./input/train.csv
   save_path: ./
   model_weight_path_folder: ./efficientnet-weights
-effnet: tf_efficientnet_b3_ns
+effnet: tf_efficientnet_b2_ns
 device: auto
 augmentations_class: AlbumentationsAugmentation
 augmentations_train:
@@ -125,6 +125,7 @@ augmentations_train:
   TorchTransforms:
     - name: RandomHorizontalFlip
     - name: RandomVerticalFlip
+    - name: AutoAugment()
     - name: ToTensor
     - name: Normalize
       params:
