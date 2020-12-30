@@ -89,7 +89,8 @@ class DiscolightAugmentation(Augmentation):
     def augment(self, image):
         aug_image = self.seq.get_img(image)
 
-        tensor = torch.as_tensor(data=image, dtype=torch.float32,
+        tensor = torch.as_tensor(data=aug_image,
+                                 dtype=torch.float32,
                                  device=None).permute(2, 0, 1)
         return tensor
 
