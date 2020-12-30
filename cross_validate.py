@@ -24,17 +24,13 @@ def make_folds(train_csv: pd.DataFrame,
     elif use_gkf:
         df_folds = train_csv.copy()
         gkf = GroupKFold(n_splits=config.n_fold)
-        # Review Comments:
-        #
-        # Should this field name be hard-coded?
-        # Do you mean df_folds instead of folds here?
-        groups = df_folds["PatientID"].values
-        for n, (train_index, val_index) in enumerate(
+        groups = df_folds[config.group_kfold_split].values
+        for fold, (train_index, val_index) in enumerate(
                 gkf.split(df_folds,
                           df_folds[config.class_col_name],
-                          groups=df_folds["PatientID"].values)):
-            df_folds.loc[val_index, "fold"] = int(n)
+                          groups=df_folds[config.group_kfold_split].values)):
+            df_folds.loc[val_index, "fold"] = int(fold+1)
         df_folds["fold"] = df_folds["fold"].astype(int)
-        display(df_folds.groupby("fold").size())
+        print(df_folds.groupby(["fold", config.class_col_name]).size())
 
     return df_folds
