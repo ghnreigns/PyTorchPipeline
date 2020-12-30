@@ -76,6 +76,7 @@ verbose_step: 1
 num_folds: 5
 image_col_name: image_name
 class_col_name: target
+group_kfold_split: PatientID
 paths:
   log_path: ./log.txt
   train_path: ./input/train
