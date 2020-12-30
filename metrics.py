@@ -3,13 +3,7 @@ import sklearn
 
 
 def multiclass_roc(y_true, y_preds_softmax_array, config):
-    # Review Comments:
-    # You never use this variable.
-    label_dict = dict()
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    roc_scores = []
+    label_dict, fpr, tpr, roc_auc, roc_scores = dict(), dict(), dict(), dict(), []
     for label_num in range(len(config.class_list)):
 
         # get y_true_multilabel binarized version for each loop (end of each epoch)
