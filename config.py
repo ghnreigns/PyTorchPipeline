@@ -1,4 +1,5 @@
 """A perser for YAML configuration."""
+import multiprocessing
 import torch
 import yamale
 
@@ -8,6 +9,7 @@ class YAMLConfig:
 
     _schema = yamale.make_schema(content="""
 seed: int()
+num_workers: any(enum('auto'), int(min=0))
 num_classes: int()
 class_list: list(int())
 batch_size: int()
@@ -58,6 +60,9 @@ augmentation:
             self._config["device"]
         ) if self._config["device"] != "auto" else torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
+
+        if self._config["num_workers"] == "auto":
+            self._config["num_workers"] = multiprocessing.cpu_count()
 
     def __getattr__(self, name):
         """Return the given configuration parameter."""

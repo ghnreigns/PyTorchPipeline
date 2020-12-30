@@ -59,8 +59,9 @@ class Trainer:
         self.date = datetime.datetime.now(
             pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
 
-        self.log("Trainer prepared. We are using {} device.".format(
-            self.config.device))
+        self.log(
+            "Trainer prepared. We are using {} device with {} workers.".format(
+                self.config.device, self.config.num_workers))
 
     def fit(self, train_loader, val_loader, fold: int):
         """Fit the model on the given fold."""
@@ -567,7 +568,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     train_loader = DataLoader(train_set,
                               batch_size=config.batch_size,
                               shuffle=True,
-                              num_workers=4,
+                              num_workers=config.num_workers,
                               worker_init_fn=seed_worker)
 
     val_set = Melanoma(val_df,
@@ -578,7 +579,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     val_loader = DataLoader(val_set,
                             batch_size=config.batch_size,
                             shuffle=False,
-                            num_workers=4,
+                            num_workers=config.num_workers,
                             worker_init_fn=seed_worker)
 
     melanoma_detector = Trainer(model=model, config=config)
