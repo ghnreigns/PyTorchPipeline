@@ -1,4 +1,5 @@
 from enum import Enum
+import numpy as np
 from typing import Union
 
 
@@ -8,13 +9,16 @@ class Mode(Enum):
 
 
 class EarlyStopping:
-
     """Class for Early Stopping."""
 
     mode_dict = {"min": np.inf, "max": -np.inf}
 
-    def __init__(self, patience: int = 5, mode: Mode = Mode.MIN, min_delta: float = 1e-5):
+    def __init__(self,
+                 patience: int = 5,
+                 mode: Mode = Mode.MIN,
+                 min_delta: float = 1e-5):
         """Construct an EarlyStopping instance.
+
         Arguments:
             patience : Number of epochs with no improvement after
                        which training will be stopped. (Default = 5)
@@ -32,7 +36,8 @@ class EarlyStopping:
         self.early_stop = False
         self.best_score = mode.value
 
-    def improvement(self, curr_epoch_score: Union[float, int], curr_best_score: Union[float, int]):
+    def improvement(self, curr_epoch_score: Union[float, int],
+                    curr_best_score: Union[float, int]):
         if self.mode == Mode.MIN:
             return curr_epoch_score <= (curr_best_score - self.min_delta)
         return curr_epoch_score >= (curr_best_score + self.min_delta)
@@ -42,8 +47,8 @@ class EarlyStopping:
         return self.mode.value
 
     def should_stop(self, curr_epoch_score):
-        """
-        The actual algorithm of early stopping.
+        """The actual algorithm of early stopping.
+
         Arguments:
             epoch_score : The value of metric or loss which you montoring for that epoch.
             mode : The model which is being trained.
@@ -52,25 +57,24 @@ class EarlyStopping:
             rmb false or true --> true, one is true is enough in boolean logic in or clause.
         """
 
-        if self.improvement(curr_epoch_score=curr_epoch_score, curr_best_score=self.best_score):
+        if self.improvement(curr_epoch_score=curr_epoch_score,
+                            curr_best_score=self.best_score):
 
             # update self.best_score
             self.best_score = curr_epoch_score
 
         else:
             self.stopping_counter += 1
-            print("Early Stopping Counter {} out of {}".format(self.stopping_counter, self.patience))
+            print("Early Stopping Counter {} out of {}".format(
+                self.stopping_counter, self.patience))
 
         if self.stopping_counter >= self.patience:
 
-            print(
-                "Early Stopping and since it is early stopping, we will not "
-                "save the model since the metric has not improved for {} "
-                "epochs".format(self.patience)
-            )
-
-            """self.early_stop flag is set to true, this will guarantee in the Trainer script, the training will break
-            out of the loop"""
+            print("Early Stopping and since it is early stopping, we will not "
+                  "save the model since the metric has not improved for {} "
+                  "epochs".format(self.patience))
+            """self.early_stop flag is set to true, this will guarantee in the
+            Trainer script, the training will break out of the loop"""
             self.early_stop = True
 
         return self.best_score, self.early_stop
