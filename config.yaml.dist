@@ -4,9 +4,9 @@ num_classes: 2
 class_list:
   - 0
   - 1
-batch_size: 6
+batch_size: 32
 n_epochs: 8
-scheduler: CosineAnnealingWarmRestarts
+scheduler: StepLR
 scheduler_params:
   StepLR:
     step_size: 2
@@ -77,6 +77,7 @@ verbose_step: 1
 num_folds: 5
 image_col_name: image_name
 class_col_name: target
+group_kfold_split: PatientID
 paths:
   log_path: ./log.txt
   train_path: ./input/train
@@ -138,6 +139,7 @@ augmentations_train:
   TorchTransforms:
     - name: RandomHorizontalFlip
     - name: RandomVerticalFlip
+    - name: AutoAugment()
     - name: ToTensor
     - name: Normalize
       params:
