@@ -126,7 +126,7 @@ augmentations_train:
   TorchTransforms:
     - name: RandomHorizontalFlip
     - name: RandomVerticalFlip
-    - name: AutoAugment()
+    - name: AutoAugment
     - name: ToTensor
     - name: Normalize
       params:
