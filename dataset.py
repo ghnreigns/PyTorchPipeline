@@ -17,7 +17,7 @@ class Melanoma(torch.utils.data.Dataset):
         config: type,
         transforms: type = None,
         test: bool = False,
-        transform_norm: bool = False,
+        transform_norm: bool = True,
         meta_features=None,
     ):
         """Construct a Melanoma dataset."""
@@ -81,7 +81,7 @@ class Melanoma(torch.utils.data.Dataset):
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        if self.transform_norm:
+        if not self.transform_norm:
             image = image.astype(np.float32) / 255.0
 
         if self.transforms is not None:

@@ -96,8 +96,16 @@ class DiscolightAugmentation(Augmentation):
 
 
 class TorchTransforms(Augmentation):
+    class TorchTransformsStore:
 
-    augmentations_store = torchvision.transforms
+        def __getattr__(self, name):
+
+            if name == "AutoAugment":
+                return AutoAugment
+
+            return getattr(torchvision.transforms, name)
+
+    augmentations_store = TorchTransformsStore()
     compose_constructor = torchvision.transforms.Compose
 
     def __init__(self, transforms: torchvision.transforms.transforms.Compose):

@@ -86,7 +86,7 @@ paths:
   model_weight_path_folder: ./efficientnet-weights
 effnet: tf_efficientnet_b2_ns
 device: auto
-augmentations_class: DiscolightAugmentation
+augmentations_class: TorchTransforms
 augmentations_train:
   DiscolightAugmentation:
     - name: VerticalFlip
@@ -139,7 +139,7 @@ augmentations_train:
   TorchTransforms:
     - name: RandomHorizontalFlip
     - name: RandomVerticalFlip
-    - name: AutoAugment()
+    - name: AutoAugment
     - name: ToTensor
     - name: Normalize
       params:
