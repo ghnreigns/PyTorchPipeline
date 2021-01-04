@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 
-from metrics import multiclass_roc, get_acc_score, get_roc_score
+import metrics
 from cross_validate import make_folds
 from dataset import Melanoma
 from model import CustomEfficientNet
@@ -32,9 +32,6 @@ class Trainer:
         self.config = config
         self.early_stopping = early_stopping
         self.epoch = 0
-        self.best_acc = 0
-        self.best_auc = 0
-        self.best_loss = np.inf
         self.save_path = config.paths["save_path"]
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
@@ -52,16 +49,23 @@ class Trainer:
             optimizer=self.optimizer,
             **config.scheduler_params[config.scheduler])
 
-        # Good habit to initiate an attribute with None and use it later on.
-        self.val_predictions = None
-        self.monitored_metrics = None
+        self.selected_metrics = [
+            metrics.construct_metric(metric, self.config)
+            for metric in self.config.metrics
+        ]
+        self.validation_metrics = metrics.ValidationMetrics(
+            self, self.selected_metrics, self.config)
+
+        # The current-known best values for selected ComparableMetric metrics
+        self.best_metrics = {}
+        # The current-known values for selected savable metrics
+        self.saved_metrics = {}
         # https://stackoverflow.com/questions/1398674/display-the-time-in-a-different-time-zone
         self.date = datetime.datetime.now(
             pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
 
-        self.log(
-            "Trainer prepared. We are using {} device with {} workers.".format(
-                self.config.device, self.config.num_workers))
+        self.log("Trainer prepared. We are using {} device with {} worker(s).".
+                 format(self.config.device, self.config.num_workers))
 
     def fit(self, train_loader, val_loader, fold: int):
         """Fit the model on the given fold."""
@@ -96,65 +100,92 @@ class Trainer:
                     train_elapsed_time))
 
             val_start_time = time.time()
-            # note here has val predictions... in actual fact it is repeated because it's the same as avg_val_acc_score
-            (
-                avg_val_loss,
-                avg_val_acc_score,
-                val_predictions,
-                val_roc_auc,
-                multi_class_roc_auc_score,
-            ) = self.valid_one_epoch(val_loader)
-            self.val_predictions = val_predictions
+            val_results = self.valid_one_epoch(val_loader)
             val_end_time = time.time()
             val_elapsed_time = time.strftime(
                 "%H:%M:%S", time.gmtime(val_end_time - val_start_time))
 
-            self.log(
-                "[RESULT]: Validation. Epoch: {} | "
-                "Avg Validation Summary Loss: {:.6f} | "
-                "Validation Accuracy: {:.6f} | Validation ROC: {:.6f} | MultiClass ROC: {} | Time Elapsed: {}"
-                .format(
-                    self.epoch + 1,
-                    avg_val_loss,
-                    avg_val_acc_score,
-                    val_roc_auc,
-                    multi_class_roc_auc_score,
-                    val_elapsed_time,
-                ))
-            """This flag is used in early stopping and scheduler.step() to let user know which metric we are monitoring."""
-            self.monitored_metrics = val_roc_auc
+            # Save the current value of all savable metrics
+            for metric in self.selected_metrics:
+                if not isinstance(metric, metrics.SavableMetric):
+                    continue
+
+                savable_name = metric.get_save_name(
+                    val_results[metric.__class__.__name__])
+
+                # If savable_name is reported as None, we don't save the
+                # metric value.
+                if savable_name is None:
+                    continue
+
+                self.saved_metrics[savable_name] = val_results[
+                    metric.__class__.__name__]
+
+            val_reported_results = [
+                metric.report(val_results[metric.__class__.__name__])
+                for metric in self.selected_metrics
+                if isinstance(metric, metrics.ReportableMetric)
+            ]
+
+            result_str = " | ".join([
+                "Validation. Epoch: {}".format(self.epoch + 1),
+                *val_reported_results,
+                "Time Elapsed: {}".format(val_elapsed_time)
+            ])
+
+            self.log("[RESULT]: {}".format(result_str))
 
             if self.early_stopping is not None:
                 best_score, early_stop = self.early_stopping.should_stop(
-                    curr_epoch_score=self.monitored_metrics)
+                    curr_epoch_score=val_results[self.config.monitored_metric])
                 """
                 Be careful of self.best_loss here, when our monitered_metrics is val_roc_auc, then we should instead write
                 self.best_auc = best_score. After which, if early_stop flag becomes True, then we break out of the training loop.
                 """
 
-                self.best_loss = best_score
-                self.save("{}_best_fold_{}.pt".format(self.config.effnet,
-                                                      fold))
+                self.best_metrics[self.config.monitored_metric] = best_score
+                self.save("{}_best_{}_fold_{}.pt".format(
+                    self.config.effnet, self.config.monitored_metric, fold))
                 if early_stop:
                     break
 
-            else:
-                # note here we use avg_val_loss, not train_val_loss! It is just right to use val_loss as benchmark
-                if avg_val_loss < self.best_loss:
-                    self.best_loss = avg_val_loss
-                    # self.save("{}_best_loss_fold_{}.pt".format(self.config.effnet, fold))
+            # Compute the new best value for all selected ComparableMetric
+            # metrics. If we find a new best value for the selected monitored
+            # metric, save the model.
+            for metric in self.selected_metrics:
+                if not isinstance(metric, metrics.ComparableMetric):
+                    continue
 
-            if self.best_acc < avg_val_acc_score:
-                self.best_acc = avg_val_acc_score
+                old_value = self.best_metrics.get(metric.__class__.__name__,
+                                                  None)
 
-            if val_roc_auc > self.best_auc:
-                self.best_auc = val_roc_auc
-                self.save(
-                    os.path.join(
-                        self.save_path,
-                        "{}_{}_best_auc_fold_{}.pt".format(
-                            self.date, self.config.effnet, fold),
-                    ))
+                if old_value is None:
+                    self.best_metrics[metric.__class__.__name__] = old_value
+
+                    if (metric.__class__.__name__ ==
+                            self.config.monitored_metric):
+                        self.save(
+                            os.path.join(
+                                self.save_path,
+                                "{}_{}_best_{}_fold_{}.pt".format(
+                                    self.date, self.config.effnet,
+                                    self.config.monitored_metric, fold)))
+
+                    continue
+
+                new_value = val_results[metric.__class__.__name]
+
+                if metric.compare(old_value, new_value):
+                    self.best_metrics[metric.__class__.__name__] = new_value
+
+                    if (metric.__class__.__name__ ==
+                            self.config.monitored_metric):
+                        self.save(
+                            os.path.join(
+                                self.save_path,
+                                "{}_{}_best_{}_fold_{}.pt".format(
+                                    self.date, self.config.effnet,
+                                    self.config.monitored_metric, fold)))
             """
             Usually, we should call scheduler.step() after the end of each epoch. In particular, we need to take note that
             ReduceLROnPlateau needs to step(monitered_metrics) because of the mode argument.
@@ -162,7 +193,8 @@ class Trainer:
             if self.config.val_step_scheduler:
                 if isinstance(self.scheduler,
                               torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    self.scheduler.step(self.monitored_metrics)
+                    self.scheduler.step(
+                        val_results[self.config.monitored_metric])
                 else:
                     self.scheduler.step()
 
@@ -175,8 +207,10 @@ class Trainer:
         curr_fold_best_checkpoint = self.load(
             os.path.join(
                 self.save_path,
-                "{}_{}_best_auc_fold_{}.pt".format(self.date,
-                                                   self.config.effnet, fold)))
+                "{}_{}_best_{}_fold_{}.pt".format(self.date,
+                                                  self.config.effnet,
+                                                  self.config.monitored_metric,
+                                                  fold)))
         # return the checkpoint for further usage.
         return curr_fold_best_checkpoint
 
@@ -355,157 +389,7 @@ class Trainer:
         # set to eval mode
         self.model.eval()
 
-        # log metrics
-        summary_loss = AverageLossMeter()
-        accuracy_scores = AccuracyMeter()
-
-        # timer
-        start_time = time.time()
-        """Assumption: In the val_loader, there exist 2000 images in total,
-        with a batch size of 4, it takes 500 loops.
-        1. val_gt_label_list: Expected form: [[...], [...], ...,
-        [...]] -> Although it is a 2-d list, we imagine it to be an
-        2d-array with shape (500, 4)
-        2. val_preds_softmax_list: Expected form: [softmax_preds,
-                                   softmax_preds, ..., softmax_preds]
-                                   --> This is a 3d-list, because each
-                                   softmax_preds is a 2d-array is of
-                                   shape [4,2]; therefore the shape is
-                                   [500, 4, 2]
-        3. val_preds_argmax_list: Expected form: [[...], [...], ...,
-        [...]] -> Although it is a 2-d list, we imagine it to be an
-        2d-array with shape (500, 4)
-
-        4. val_preds_roc_list: Expected form: [softmax_preds[:,1], softmax_preds[:,1], softmax_preds[:,1], ...]
-           Here is worth mentioning that the list that roc_auc_score expects is of the form (y_true, y_preds) where
-           y_true are ground truth labels and y_preds are the softmax probabilities. Also, we must be very sure that
-           y_preds must be a 1d-list containing all the predictions of class 1 (the greater label - read my notebook for more insights).
-           print(softmax_preds[:,1], softmax_preds[:,1].shape) --> [0.4813407, 0.45600918, 0.550916, 0.4809445] (4,)
-                    [[0.51865923 0.4813407 ]
-                    [0.5439908  0.45600918]
-                    [0.44908398 0.550916  ]
-                    [0.51905555 0.4809445 ]]   (4,2)
-        """
-        val_gt_label_list, val_preds_softmax_list, val_preds_roc_list, val_preds_argmax_list = [], [], [], []
-        """Looping through val loader for one epoch, steps is the number of times to go through each epoch;
-         with torch.no_grad(): off gradients for torch when validating because we do not need to store gradients for each logits."""
-
-        with torch.no_grad():
-            for step, (_image_ids, images, labels) in enumerate(val_loader):
-
-                images = images.to(self.config.device)
-                labels = labels.to(self.config.device)
-                batch_size = images.shape[0]
-
-                logits = self.model(images)
-                """Depending on your loss function, you might need to adjust the loss function during validation. If you use `CrossEntropyLoss`
-                   then one can use both for train and val, but if you use a custom loss like `LabelSmoothingLoss`, then it's good to use them separately,
-                   as in inferencing, the loss won't be label smoothed, so to gain an accurate cv, do as above."""
-                loss = self.criterion(input=logits, target=labels)
-                summary_loss.update(loss.item(), batch_size)
-                """ We have covered these in train_one_epoch, here is a quick recap
-                with the assumption of the DataLoader having a batch
-                size of 4:
-                1. y_true: [1,0,0,1] --> 1-d array with shape (4,)
-                2. softmax_preds: [[..], [..], [..], [..]] --> 2-d
-                   array with shape (4, 2); Notice that there is a
-                   subtle difference in the code here; The .detach is
-                   removed because we do not have gradients for the
-                   logits here - which is why with torch.no_grad() is
-                   called in the first place.
-                3. y_preds: [1,1,0,1] --> 1-d array with shape (4,)
-                4. positive_class_preds: [....] Basically refer to val_preds_roc_list explanation.
-                """
-
-                y_true = labels.cpu().numpy()
-                softmax_preds = torch.nn.Softmax(dim=1)(
-                    input=logits).to("cpu").numpy()
-                positive_class_preds = softmax_preds[:, 1]
-                y_preds = np.argmax(a=softmax_preds, axis=1)
-                accuracy_scores.update(y_true, y_preds, batch_size=batch_size)
-                """
-                Repeated explanation as putting here might be clearer:
-                Assumption: In the val_loader, there exist 2000 images
-                in total, with a batch size of 4, it takes 500 loops.
-                1. val_gt_label_list: Expected form: [[...], [...],
-                ..., [...]] -> Although it is a 2-d list, we imagine
-                it to be an 2d-array with shape (500, 4)
-                2. val_preds_softmax_list: Expected form:
-                [softmax_preds, softmax_preds, ..., softmax_preds] -->
-                This is a 3d-list, because each softmax_preds is a
-                2d-array is of shape [4,2]; therefore the shape is
-                [500, 4, 2]
-                3. val_preds_argmax_list: Expected form: [[...],
-                [...], ..., [...]] -> Although it is a 2-d list, we
-                imagine it to be an 2d-array with shape (500, 4) 
-                4. val_preds_roc_list: Expected form: [[...],
-                [...], ..., [...]] -> Although it is a 2-d list, we
-                imagine it to be an 2d-array with shape (500, 4) """
-
-                val_preds_roc_list.append(positive_class_preds)
-                val_gt_label_list.append(y_true)
-                val_preds_softmax_list.append(softmax_preds)
-                val_preds_argmax_list.append(y_preds)
-
-                end_time = time.time()
-
-                if self.config.verbose:
-                    if (step % self.config.verbose_step) == 0:
-                        print(
-                            f"Validation Steps {step}/{len(val_loader)}, "
-                            f"summary_loss: {summary_loss.avg:.3f}, "
-                            f"val_acc: {accuracy_scores.avg:.6f} "
-                            f"time: {(end_time - start_time):.3f}",
-                            end="\r",
-                        )
-            """ 1. val_gt_label_array: The new shape changes from (500, 4) to
-            (2000,) where it is flattened from "2d-list" to 1d-array.
-            This array contains all 2000 validation image's ground
-            truth labels --> [1,0,0,1,1,.......]
-
-            2. val_preds_softmax_array: The new shape changes from
-            (500, 4, 2) to (2000, 2) where it is flattened from
-            "3d-list" to 2d-array. This array contains all 2000
-            validation image's softmax predictions --> [[0.8, 0.2],
-            [0.88, 0.12],...,[0.99, 0.01]]
-            
-            3. val_preds_argmax_array: The new shape changes from
-            (500, 4) to (2000,) where it is flattened from "2d-list"
-            to 1d-array.  This array contains all 2000 validation
-            image's predicted labels --> [1,1,0,1,0,.......]
-            The above are the ground truth and predictions for the
-            current epoch.
-
-            4. val_roc_auc_array: The new shape changes from
-            (500, 4) to (2000,) where it is flattened from "2d-list"
-            to 1d-array.  This array contains all 2000 validation
-            image's positive class's predictions in probabilities --> [0.4813407, 0.45600918, 0.550916, 0.4809445,...]
-
-            5. Everything above contains 2000 because it is all values in one epoch, where in our example is 2000.
-            """
-
-            val_gt_label_array = np.concatenate(val_gt_label_list, axis=0)
-            val_preds_softmax_array = np.concatenate(val_preds_softmax_list,
-                                                     axis=0)
-            val_preds_argmax_array = np.concatenate(val_preds_argmax_list,
-                                                    axis=0)
-            val_preds_roc_array = np.concatenate(val_preds_roc_list, axis=0)
-
-            val_roc_auc_score = sklearn.metrics.roc_auc_score(
-                y_true=val_gt_label_array, y_score=val_preds_roc_array)
-            # DEPENDS ON Binary or Multiclass
-            multi_class_roc_auc_score, _ = multiclass_roc(
-                y_true=val_gt_label_array,
-                y_preds_softmax_array=val_preds_softmax_array,
-                config=self.config)
-
-        return (
-            summary_loss.avg,
-            accuracy_scores.avg,
-            val_preds_softmax_array,
-            val_roc_auc_score,
-            multi_class_roc_auc_score,
-        )
+        return self.validation_metrics.compute_metrics(val_loader)
 
     def save_model(self, path):
         """Save the trained model."""
@@ -516,16 +400,20 @@ class Trainer:
         """Save the weight for the best evaluation loss (and monitored metrics) with corresponding OOF predictions.
         OOF predictions for each fold is merely the best score for that fold."""
         self.model.eval()
+
+        best_metrics = {
+            "best_{}".format(best_metric): value
+            for (best_metric, value) in self.best_metrics.items()
+        }
+
         torch.save(
             {
                 "model_state_dict": self.model.state_dict(),
                 "optimizer_state_dict": self.optimizer.state_dict(),
                 "scheduler_state_dict": self.scheduler.state_dict(),
-                "best_acc": self.best_acc,
-                "best_auc": self.best_auc,
-                "best_loss": self.best_loss,
                 "epoch": self.epoch,
-                "oof_preds": self.val_predictions,
+                **best_metrics,
+                **self.saved_metrics,
             },
             path,
         )
