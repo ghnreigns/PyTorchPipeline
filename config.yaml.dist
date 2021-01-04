@@ -1,4 +1,5 @@
 seed: 1930
+num_workers: auto
 num_classes: 2
 class_list:
   - 0
@@ -65,6 +66,19 @@ criterion_params:
     alpha: 1
     gamma: 2
     xent: 0.1
+metric_params:
+  average_accuracy: {}
+  average_loss: {}
+  multi_class_roc_auc_score: {}
+  val_preds_softmax_array: {}
+  val_roc_auc_score: {}
+metrics:
+  - average_loss
+  - average_accuracy
+  - val_preds_softmax_array
+  - val_roc_auc_score
+  - multi_class_roc_auc_score
+monitored_metric: val_roc_auc_score
 image_size: 256
 resize: 256
 crop_size:
@@ -83,10 +97,23 @@ paths:
   csv_path: ./input/train.csv
   save_path: ./
   model_weight_path_folder: ./efficientnet-weights
+model_factory: geffnet
 effnet: tf_efficientnet_b2_ns
 device: auto
 augmentations_class: TorchTransforms
 augmentations_train:
+  DiscolightAugmentation:
+    - name: VerticalFlip
+      params:
+        probs: 0.5
+    - name: HorizontalFlip
+      params:
+        probs: 0.5
+    - name: RandomCrop
+    - name: Resize
+      params:
+        height: 256
+        width: 256
   AlbumentationsAugmentation:
     - name: VerticalFlip
       params:
@@ -163,6 +190,7 @@ augmentations_train:
           - 0.224
           - 0.225
 augmentations_val:
+  DiscolightAugmentation: []
   AlbumentationsAugmentation:
     - name: ToTensorV2
       params:
