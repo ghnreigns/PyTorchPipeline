@@ -66,19 +66,22 @@ criterion_params:
     alpha: 1
     gamma: 2
     xent: 0.1
-metric_params:
+result_params:
   average_accuracy: {}
   average_loss: {}
   multi_class_roc_auc_score: {}
   val_preds_softmax_array: {}
   val_roc_auc_score: {}
-metrics:
+results_train:
+  - average_loss
+  - average_accuracy
+results_val:
   - average_loss
   - average_accuracy
   - val_preds_softmax_array
   - val_roc_auc_score
   - multi_class_roc_auc_score
-monitored_metric: val_roc_auc_score
+monitored_result: val_roc_auc_score
 image_size: 256
 resize: 256
 crop_size:

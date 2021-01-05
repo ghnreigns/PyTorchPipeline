@@ -5,7 +5,7 @@ import torch
 import yaml
 import yamale
 
-import metrics
+import results
 
 
 class YAMLConfig:
@@ -27,9 +27,10 @@ optimizer_params: map()
 criterion: str()
 criterion_val: str()
 criterion_params: map()
-metrics: list(str())
-monitored_metric: str()
-metric_params: map()
+results_val: list(str())
+results_train: list(str())
+monitored_result: str()
+result_params: map()
 image_size: int()
 resize: int()
 crop_size: map(int(), key=int())
@@ -76,7 +77,6 @@ augmentation:
 
         :returns: True if the configuration was updated, and False otherwise
         """
-
         if item_name in self._config[params_key]:
             return False
 
@@ -88,7 +88,7 @@ augmentation:
             if param.default != inspect.Parameter.empty
         }
 
-        # Some PyTorch optimizers mark requried paramaters by setting
+        # Some PyTorch optimizers mark required paramaters by setting
         # the default value to the special object
         # torch.optim.optimizer.required. Since this value is not
         # actually accessible to us (its hidden within the torch.optim
@@ -128,10 +128,15 @@ augmentation:
 
         configuration_updated = False
 
-        for metric in self._config["metrics"]:
+        for result in self._config["results_val"]:
             configuration_updated |= self._generate_default_configuration(
-                metric, "metric_params",
-                lambda metric: metrics._metrics[metric].__init__)
+                result, "result_params",
+                lambda metric: results._results[result].__init__)
+
+        for result in self._config["results_train"]:
+            configuration_updated |= self._generate_default_configuration(
+                result, "result_params",
+                lambda metric: results._results[result].__init__)
 
         configuration_updated |= self._generate_default_configuration(
             self._config["scheduler"],
