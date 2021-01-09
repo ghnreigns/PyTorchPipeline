@@ -61,12 +61,17 @@ class Melanoma(torch.utils.data.Dataset):
            this class for both train and test. So I have to anticipate that testset's df has no
            column called label."""
 
-        label = None
-        ### Ian to the rescue! Setting label = None will lead to errors###
+        # label = None
+
         """ It seems like you cannot use label = None as when you initiate DataLoader, the collate function inside expects anything
         inside to be numpy or tensor form, which label is not; So I set label to be tensor[0] and if we are in train mode, it will overwrite anyways."""
         label = torch.zeros(1)
 
+        ### Problem 2: I suddenly have a dataset whereby the images are named 1.2.826.0.1.3680043.8.498.jpg =.=|||
+        ### This cause my check_df_ext(df=self.df, col_name=config.image_col_name) function above (called in utils)
+        ### to throw error, let me know if there is an elegant fix. I did not really anticipate weird(?) symbols
+        ### to appear in image name, so maybe next time I will see something like x12donal?...?trum_!.jpg
+        
         if self.test:
             image_path = os.path.join(
                 self.config.paths["test_path"],
