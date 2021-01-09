@@ -77,6 +77,8 @@ class Melanoma(torch.utils.data.Dataset):
                 self.config.paths["test_path"],
                 "{}{}".format(image_id, self.image_extension))
         else:
+            ### Problem 3: Encountered a situation where by dytpe of label must be torch.float32 when you are using BCE loss.
+            ### This part here is quite perplexing because usually labels are int format. What is the best way to catch the dtype error here?
             label = self.df[self.config.class_col_name].values[idx]
             label = torch.as_tensor(data=label, dtype=torch.int64, device=None)
             image_path = os.path.join(
