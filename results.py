@@ -1,3 +1,11 @@
+### Problem 5: If one uses custom loss functions like LabelSmoothingLoss, for example, then it is necessarily to use two different loss, one for train
+### one for val. This is because while training, the custom loss function will be a deciding factor to optimize(minimization in fact) the loss. However,
+### during validation mode, we will use back our normal loss function to obtain a more accurate result of what we would expect when predicting on an unseen test.
+### For now, I hardcoded this in config to be something like:     criterion_train = 'LabelSmoothingLoss' and criterion_val = 'CrossEntropyLoss' and call 
+        # self.criterion_train = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
+        # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
+### Subsequently, changing the above attribute accordingly in train and val.
+
 """A configurable system for computing model training and validation results."""
 import abc
 from enum import Enum
