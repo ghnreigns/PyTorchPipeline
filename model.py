@@ -20,11 +20,14 @@ class CustomEfficientNet(nn.Module):
             model_name=config.effnet,
             pretrained=pretrained,
         )
-
+        ### Problem: In timm module, some of the models have different names for the below two lines of code.
+        ### If model name = resnext50_32x4d, then the below should be like this.
+        ### n_features = self.model.fc.in_features
+        ### self.model.fc = nn.Linear(n_features, config.num_classes)
+        
         n_features = self.model.classifier.in_features
         self.model.classifier = nn.Linear(n_features, config.num_classes)
 
-    # TODO: Change x to input_neurons, I feel it is more apt.
     def forward(self, input_neurons):
         """Define the computation performed at every call."""
         # TODO: add dropout layers, or the likes.
