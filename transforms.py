@@ -45,8 +45,7 @@ class Augmentation(ABC):
         return a new class instance.
         """
         augmentation_objs = [
-            getattr(klass.augmentations_store,
-                    augmentation["name"])(**augmentation.get("params", {}))
+            getattr(klass.augmentations_store, augmentation["name"])(**augmentation.get("params", {}))
             for augmentation in augmentations
         ]
 
@@ -56,6 +55,7 @@ class Augmentation(ABC):
 class AlbumentationsAugmentation(Augmentation):
     class AlbumentationsStore:
         """A wrapper that exposes ToTensorV2 alongside other augmentations."""
+
         def __getattr__(self, name):
 
             if name == "ToTensorV2":
@@ -89,15 +89,12 @@ class DiscolightAugmentation(Augmentation):
     def augment(self, image):
         aug_image = self.seq.get_img(image)
 
-        tensor = torch.as_tensor(data=aug_image,
-                                 dtype=torch.float32,
-                                 device=None).permute(2, 0, 1)
+        tensor = torch.as_tensor(data=aug_image, dtype=torch.float32, device=None).permute(2, 0, 1)
         return tensor
 
 
 class TorchTransforms(Augmentation):
     class TorchTransformsStore:
-
         def __getattr__(self, name):
 
             if name == "AutoAugment":
@@ -129,10 +126,3 @@ class TorchToolBoxTransforms(Augmentation):
     def augment(self, image):
         transformed_image = self.transforms(image)
         return transformed_image
-
-
-# Review Comments:
-# Where are AutoAugment(), Microscope() and DrawHair() defined?
-
-######For Ian#########
-"""Technically, this seems more elegant, but KIV on where to put augment_config"""

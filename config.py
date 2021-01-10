@@ -11,7 +11,8 @@ import results
 class YAMLConfig:
     """Stores configuration loaded from a YAML file."""
 
-    _schema = yamale.make_schema(content="""
+    _schema = yamale.make_schema(
+        content="""
 seed: int()
 num_workers: any(enum('auto'), int(min=0))
 num_classes: int()
@@ -32,8 +33,6 @@ results_train: list(str())
 monitored_result: str()
 result_params: map()
 image_size: int()
-resize: int()
-crop_size: map(int(), key=int())
 verbose: int()
 verbose_step: int()
 num_folds: int()
@@ -47,7 +46,7 @@ paths:
   save_path: str()
   model_weight_path_folder: str()
 model_factory: enum('geffnet', 'timm')
-effnet: str()
+model_name: str()
 device: str()
 augmentations_class: str()
 augmentations_train: map(list(include('augmentation')), key=str())
@@ -56,7 +55,8 @@ augmentations_val: map(list(include('augmentation')), key=str())
 augmentation:
   name: str()
   params: map(required=False)
-""")
+"""
+    )
 
     def _generate_default_configuration(self, item_name, params_key, factory):
         """Generate default configuration for a selected item.
@@ -101,18 +101,20 @@ augmentation:
                 found_required_value = True
 
         if found_required_value:
-            raise ValueError("Failed to generate a default configuration for "
-                             "{} because some of its required parameters "
-                             "do not have an associated default value. You "
-                             "should check the documentation for {} and "
-                             "manually enter its configuration under {}. Here "
-                             "are the values you must provide (some with "
-                             "defaults we found):\n\n{}".format(
-                                 item_name, item_name, params_key, "\n".join([
-                                     "{}: {}".format(name, value)
-                                     for (name,
-                                          value) in default_values.items()
-                                 ])))
+            raise ValueError(
+                "Failed to generate a default configuration for "
+                "{} because some of its required parameters "
+                "do not have an associated default value. You "
+                "should check the documentation for {} and "
+                "manually enter its configuration under {}. Here "
+                "are the values you must provide (some with "
+                "defaults we found):\n\n{}".format(
+                    item_name,
+                    item_name,
+                    params_key,
+                    "\n".join(["{}: {}".format(name, value) for (name, value) in default_values.items()]),
+                )
+            )
 
         self._config[params_key][item_name] = default_values
 
@@ -130,43 +132,45 @@ augmentation:
 
         for result in self._config["results_val"]:
             configuration_updated |= self._generate_default_configuration(
-                result, "result_params",
-                lambda metric: results._results[result].__init__)
+                result, "result_params", lambda metric: results._results[result].__init__
+            )
 
         for result in self._config["results_train"]:
             configuration_updated |= self._generate_default_configuration(
-                result, "result_params",
-                lambda metric: results._results[result].__init__)
+                result, "result_params", lambda metric: results._results[result].__init__
+            )
 
         configuration_updated |= self._generate_default_configuration(
             self._config["scheduler"],
-            "scheduler_params", lambda scheduler: getattr(
-                torch.optim.lr_scheduler, scheduler).__init__)
+            "scheduler_params",
+            lambda scheduler: getattr(torch.optim.lr_scheduler, scheduler).__init__,
+        )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["criterion"], "criterion_params",
-            lambda criterion: getattr(torch.nn, criterion).__init__)
+            self._config["criterion"], "criterion_params", lambda criterion: getattr(torch.nn, criterion).__init__
+        )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["criterion_val"], "criterion_params",
-            lambda criterion: getattr(torch.nn, criterion).__init__)
+            self._config["criterion_val"], "criterion_params", lambda criterion: getattr(torch.nn, criterion).__init__
+        )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["optimizer"], "optimizer_params",
-            lambda optimizer: getattr(torch.optim, optimizer).__init__)
+            self._config["optimizer"], "optimizer_params", lambda optimizer: getattr(torch.optim, optimizer).__init__
+        )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["scheduler"], "scheduler_params",
-            lambda scheduler: getattr(torch.optim.lr_scheduler).__init__)
+            self._config["scheduler"], "scheduler_params", lambda scheduler: getattr(torch.optim.lr_scheduler).__init__
+        )
 
         if configuration_updated and save_updated_configuration:
-            with open(config_path, 'w', encoding='utf-8') as yaml_file:
+            with open(config_path, "w", encoding="utf-8") as yaml_file:
                 yaml.dump(self._config, yaml_file)
 
-        self._config["device"] = torch.device(
-            self._config["device"]
-        ) if self._config["device"] != "auto" else torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+        self._config["device"] = (
+            torch.device(self._config["device"])
+            if self._config["device"] != "auto"
+            else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        )
 
         if self._config["num_workers"] == "auto":
             self._config["num_workers"] = multiprocessing.cpu_count()
@@ -174,11 +178,9 @@ augmentation:
     def __getattr__(self, name):
         """Return the given configuration parameter."""
         if name not in self._config:
-            raise AttributeError(
-                "No such configuration parameter {}".format(name))
+            raise AttributeError("No such configuration parameter {}".format(name))
 
         try:
             return self._config[name]
         except KeyError:
-            raise AttributeError(
-                "No such configuration parameter {}".format(name))
+            raise AttributeError("No such configuration parameter {}".format(name))

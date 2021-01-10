@@ -1,9 +1,9 @@
 ### Problem 5: If one uses custom loss functions like LabelSmoothingLoss, for example, then it is necessarily to use two different loss, one for train
 ### one for val. This is because while training, the custom loss function will be a deciding factor to optimize(minimization in fact) the loss. However,
 ### during validation mode, we will use back our normal loss function to obtain a more accurate result of what we would expect when predicting on an unseen test.
-### For now, I hardcoded this in config to be something like:     criterion_train = 'LabelSmoothingLoss' and criterion_val = 'CrossEntropyLoss' and call 
-        # self.criterion_train = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
-        # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
+### For now, I hardcoded this in config to be something like:     criterion_train = 'LabelSmoothingLoss' and criterion_val = 'CrossEntropyLoss' and call
+# self.criterion_train = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
+# self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
 ### Subsequently, changing the above attribute accordingly in train and val.
 
 """A configurable system for computing model training and validation results."""
@@ -17,7 +17,7 @@ import numpy as np
 import sklearn
 import torch
 
-import roc
+import metrics
 
 
 class Mode(Enum):
@@ -27,6 +27,7 @@ class Mode(Enum):
 
 class PerStepResult(abc.ABC):
     """A result computed at each step with no overall summary."""
+
     @abc.abstractmethod
     def step(self, *args, **kwargs):
         """Compute the result value at the current step.
@@ -49,6 +50,7 @@ class PerStepResult(abc.ABC):
 
 class Result(abc.ABC):
     """A result computed at each step with an overall summary."""
+
     @abc.abstractmethod
     def step(self, *args, **kwargs):
         """Compute the result value at the current step.
@@ -89,6 +91,7 @@ class Result(abc.ABC):
 
 class PerStepReportableResult(abc.ABC):
     """A result whose per-step computations may be reported."""
+
     @abc.abstractmethod
     def report_step(self, step_value):
         """Get the current step value for the result as a string."""
@@ -96,6 +99,7 @@ class PerStepReportableResult(abc.ABC):
 
 class ReportableResult(abc.ABC):
     """A result whose summary value may be reported."""
+
     @abc.abstractmethod
     def report(self, computed_value):
         """Get the summary value for the result as a string."""
@@ -103,6 +107,7 @@ class ReportableResult(abc.ABC):
 
 class ComparableResult(abc.ABC):
     """A result whose summary values may be compared."""
+
     @abc.abstractmethod
     def compare(self, old_value, new_value):
         """Determine whether the new_value is better than the old_value."""
@@ -110,6 +115,7 @@ class ComparableResult(abc.ABC):
 
 class SavableResult(abc.ABC):
     """A result whose value may be saved when the model is saved."""
+
     @abc.abstractmethod
     def get_save_name(self, computed_value):
         """Get the name this result should be saved under in the model dict.
@@ -119,9 +125,9 @@ class SavableResult(abc.ABC):
         """
 
 
-class average_loss(Result, PerStepReportableResult, ReportableResult,
-                   ComparableResult):
+class average_loss(Result, PerStepReportableResult, ReportableResult, ComparableResult):
     """A result for computing average loss."""
+
     def __init__(self):
         self.curr_batch_avg_loss = 0
         self.avg = 0
@@ -154,9 +160,9 @@ class average_loss(Result, PerStepReportableResult, ReportableResult,
         return new_value < old_value
 
 
-class average_accuracy(Result, PerStepReportableResult, ReportableResult,
-                       ComparableResult):
+class average_accuracy(Result, PerStepReportableResult, ReportableResult, ComparableResult):
     """A result for computing average prediction accuracy."""
+
     def __init__(self):
         self.score = 0
         self.count = 0
@@ -255,12 +261,12 @@ class val_gt_label_array(Result):
 
 class val_roc_auc_score(Result, ReportableResult, ComparableResult):
     """A result for computing the validation ROC score."""
+
     def step(self, **kwargs):
         pass
 
     def compute(self, val_gt_label_array, val_preds_roc_array, **kwargs):
-        return sklearn.metrics.roc_auc_score(y_true=val_gt_label_array,
-                                             y_score=val_preds_roc_array)
+        return sklearn.metrics.roc_auc_score(y_true=val_gt_label_array, y_score=val_preds_roc_array)
 
     def reset(self):
         pass
@@ -274,15 +280,14 @@ class val_roc_auc_score(Result, ReportableResult, ComparableResult):
 
 class multi_class_roc_auc_score(Result, ReportableResult, ComparableResult):
     """A result for computing the multi-class validation ROC score."""
+
     def step(self, **kwargs):
         pass
 
-    def compute(self, val_gt_label_array, val_preds_softmax_array, config,
-                **kwargs):
-        score, _ = roc.multiclass_roc(
-            y_true=val_gt_label_array,
-            y_preds_softmax_array=val_preds_softmax_array,
-            config=config)
+    def compute(self, val_gt_label_array, val_preds_softmax_array, config, **kwargs):
+        score, _ = metrics.multiclass_roc(
+            y_true=val_gt_label_array, y_preds_softmax_array=val_preds_softmax_array, config=config
+        )
 
         return score
 
@@ -310,8 +315,7 @@ class softmax_preds(PerStepResult):
         if mode == Mode.VALIDATION:
             return torch.nn.Softmax(dim=1)(input=logits).to("cpu").numpy()
         else:
-            return torch.nn.Softmax(dim=1)(
-                input=logits).to("cpu").detach().numpy()
+            return torch.nn.Softmax(dim=1)(input=logits).to("cpu").detach().numpy()
 
     def reset(self):
         pass
@@ -328,7 +332,8 @@ class y_preds(PerStepResult):
 def get_function_param_names(func):
     """Get the positional and keyword parameter names of a function."""
     return [
-        param.name for param in inspect.signature(func).parameters.values()
+        param.name
+        for param in inspect.signature(func).parameters.values()
         if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
     ]
 
@@ -340,8 +345,7 @@ def get_function_param_names(func):
 _results = {
     name: result
     for (name, result) in globals().items()
-    if (inspect.isclass(result) and not inspect.isabstract(result)
-        and issubclass(result, (Result, PerStepResult)))
+    if (inspect.isclass(result) and not inspect.isabstract(result) and issubclass(result, (Result, PerStepResult)))
 }
 
 
@@ -383,9 +387,17 @@ class Results(abc.ABC):
     and computed for you. Only the results of the _selected summary
     results_ will be returned when results are computed.
     """
-    def __init__(self, results_type, computation_context,
-                 built_in_dependencies_per_step, built_in_dependencies_summary,
-                 trainer, results, config):
+
+    def __init__(
+        self,
+        results_type,
+        computation_context,
+        built_in_dependencies_per_step,
+        built_in_dependencies_summary,
+        trainer,
+        results,
+        config,
+    ):
         """Construct a new Results instance.
 
         All selected results in `results` _must_ be summary results (i.e.,
@@ -404,11 +416,9 @@ class Results(abc.ABC):
 
         self.config = config
 
-        self.trainer.log(
-            "Solving {} results computation order...".format(results_type))
+        self.trainer.log("Solving {} results computation order...".format(results_type))
 
-        def compute_computation_order(classes, func_from_class,
-                                      built_in_dependencies):
+        def compute_computation_order(classes, func_from_class, built_in_dependencies):
             """Determine the computation order of results for a phase.
 
             :param classes:
@@ -417,7 +427,7 @@ class Results(abc.ABC):
                 A function that, given a result class, returns the function
                 to be called for the current phase that we need to get
                 dependencies from
-                
+
                 e.g., lambda result: result.step
             :param built_in_dependencies:
                 A set of string names for dependencies that will be
@@ -444,8 +454,7 @@ class Results(abc.ABC):
 
                 # Result dependencies are the function arguments minus
                 # the pre-computed dependencies.
-                deps = set(
-                    get_function_param_names(func)) - built_in_dependencies
+                deps = set(get_function_param_names(func)) - built_in_dependencies
 
                 # If we've come across dependencies that hasn't been
                 # selected by the user, we need to add it to the
@@ -477,10 +486,7 @@ class Results(abc.ABC):
 
             # Turn the set of all needed results into a map for easily
             # fetching the needed results by name.
-            used_results = {
-                result.__class__.__name__: result
-                for result in used_results
-            }
+            used_results = {result.__class__.__name__: result for result in used_results}
 
             # Get the order the results must be computed in
             solved_order = nx.algorithms.dag.topological_sort(g)
@@ -494,23 +500,25 @@ class Results(abc.ABC):
         # may have additional dependencies in the per-step phase,
         # which must be properly accounted for.
         self.summary_results = compute_computation_order(
-            results, lambda result: result.compute,
-            built_in_dependencies_summary)
+            results, lambda result: result.compute, built_in_dependencies_summary
+        )
 
         self.per_step_results = compute_computation_order(
-            self.summary_results, lambda result: result.step,
-            built_in_dependencies_per_step)
+            self.summary_results, lambda result: result.step, built_in_dependencies_per_step
+        )
 
-        self.trainer.log("Per-Step Results: {}".format(", ".join(
-            [metric.__class__.__name__ for metric in self.per_step_results])))
-        self.trainer.log("Summary Results: {}".format(", ".join(
-            [metric.__class__.__name__ for metric in self.summary_results])))
-        self.trainer.log("Selected Results: {}".format(", ".join(
-            [metric.__class__.__name__ for metric in self.results])))
+        self.trainer.log(
+            "Per-Step Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.per_step_results]))
+        )
+        self.trainer.log(
+            "Summary Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.summary_results]))
+        )
+        self.trainer.log(
+            "Selected Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.results]))
+        )
 
     @abc.abstractmethod
-    def compute_built_in_per_step_results(self, step, image_ids, images,
-                                          labels):
+    def compute_built_in_per_step_results(self, step, image_ids, images, labels):
         """Compute built-in results for a step."""
 
     @abc.abstractmethod
@@ -530,8 +538,7 @@ class Results(abc.ABC):
 
                 # Compute all the pre-computed dependencies available
                 # to all results
-                step_computed = self.compute_built_in_per_step_results(
-                    step, image_ids, images, labels)
+                step_computed = self.compute_built_in_per_step_results(step, image_ids, images, labels)
 
                 for result in self.per_step_results:
 
@@ -541,25 +548,23 @@ class Results(abc.ABC):
                     # step(), we would have to select only the step results
                     # explicitly asked for in step(), or we would get an
                     # invalid keyword argument exception.
-                    step_computed[result.__class__.__name__] = result.step(
-                        **step_computed)
+                    step_computed[result.__class__.__name__] = result.step(**step_computed)
 
-                if (self.config.verbose
-                        and step % self.config.verbose_step == 0):
+                if self.config.verbose and step % self.config.verbose_step == 0:
                     end_time = time.time()
                     reported_computed = [
-                        result.report_step(
-                            step_computed[result.__class__.__name__])
+                        result.report_step(step_computed[result.__class__.__name__])
                         for result in self.per_step_results
                         if isinstance(result, PerStepReportableResult)
                     ]
 
-                    results_str = ", ".join([
-                        "{} steps: {} / {}".format(self.results_type, step,
-                                                   len(loader)),
-                        *reported_computed,
-                        "time: {:.3f}".format(end_time - start_time)
-                    ])
+                    results_str = ", ".join(
+                        [
+                            "{} steps: {} / {}".format(self.results_type, step, len(loader)),
+                            *reported_computed,
+                            "time: {:.3f}".format(end_time - start_time),
+                        ]
+                    )
 
                     print(results_str, end="\r")
 
@@ -568,26 +573,26 @@ class Results(abc.ABC):
 
         # Now compute the summary phase of all summary results
         for result in self.summary_results:
-            summary_computed[result.__class__.__name__] = result.compute(
-                **summary_computed)
+            summary_computed[result.__class__.__name__] = result.compute(**summary_computed)
 
-        return {
-            result.__class__.__name__:
-            summary_computed[result.__class__.__name__]
-            for result in self.results
-        }
+        return {result.__class__.__name__: summary_computed[result.__class__.__name__] for result in self.results}
 
 
 class ValidationResults(Results):
     """A class for performing model validation with selected results."""
-    def __init__(self, trainer, results, config):
-        super().__init__("validation", torch.no_grad, {
-            'images', 'labels', 'batch_size', 'logits', 'loss', 'config',
-            'mode'
-        }, {'config', 'mode'}, trainer, results, config)
 
-    def compute_built_in_per_step_results(self, step, _image_ids, images,
-                                          labels):
+    def __init__(self, trainer, results, config):
+        super().__init__(
+            "validation",
+            torch.no_grad,
+            {"images", "labels", "batch_size", "logits", "loss", "config", "mode"},
+            {"config", "mode"},
+            trainer,
+            results,
+            config,
+        )
+
+    def compute_built_in_per_step_results(self, step, _image_ids, images, labels):
 
         images = images.to(self.config.device)
         labels = labels.to(self.config.device)
@@ -610,6 +615,7 @@ class ValidationResults(Results):
 
 class EmptyContextManager:
     """A context manager that does nothing."""
+
     def __enter__(self):
         return self
 
@@ -619,14 +625,19 @@ class EmptyContextManager:
 
 class TrainingResults(Results):
     """A class for performing model training with selected results."""
-    def __init__(self, trainer, results, config):
-        super().__init__("training", EmptyContextManager, {
-            'images', 'labels', 'batch_size', 'logits', 'loss', 'config',
-            'mode'
-        }, {'config', 'mode'}, trainer, results, config)
 
-    def compute_built_in_per_step_results(self, step, _image_ids, images,
-                                          labels):
+    def __init__(self, trainer, results, config):
+        super().__init__(
+            "training",
+            EmptyContextManager,
+            {"images", "labels", "batch_size", "logits", "loss", "config", "mode"},
+            {"config", "mode"},
+            trainer,
+            results,
+            config,
+        )
+
+    def compute_built_in_per_step_results(self, step, _image_ids, images, labels):
         images = images.to(self.config.device)
         labels = labels.to(self.config.device)
         batch_size = images.shape[0]
