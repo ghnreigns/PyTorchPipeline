@@ -259,6 +259,9 @@ class val_gt_label_array(Result):
         self.gt_label_list = []
 
 
+"""Note that val_roc_auc_score should be the same as multi_class_roc_auc_score if we are training on binary."""
+
+
 class val_roc_auc_score(Result, ReportableResult, ComparableResult):
     """A result for computing the validation ROC score."""
 

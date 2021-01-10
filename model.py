@@ -16,7 +16,7 @@ class CustomModel(torch.nn.Module):
 
         self.model = model_factory(
             model_weight_path_folder=config.paths["model_weight_path_folder"],
-            model_name=config.effnet,
+            model_name=config.model_name,
             pretrained=pretrained,
         )
 
@@ -72,7 +72,7 @@ class Backbone(torch.nn.Module):
         return x
 
 
-class Net(nn.Module):
+class Net(torch.nn.Module):
     def __init__(self):
 
         super().__init__()

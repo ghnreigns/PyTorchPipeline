@@ -8,6 +8,8 @@ import torch
 import torchvision
 import torchtoolbox.transform
 
+from autoaugment.auto_augment import AutoAugment
+
 
 class Augmentation(ABC):
     """A standard interface for performing augmentations."""

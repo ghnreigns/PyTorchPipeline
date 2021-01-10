@@ -12,9 +12,16 @@ Union of the 5 val_dfs will be equal to the whole dataset. That is Union(len(val
 The below is an example for multiclass-classification, this may not work for multilabel-classification.
 """
 
-dummy_preds_random = np.random.rand(4280, 5)
-val_df = df_folds[df_folds["fold"] == 1].reset_index(drop=True)
-dummy_preds_random.shape
-val_df.head()
-val_df[[str(c) for c in range(5)]] = dummy_preds_random
-val_df.head()
+
+def oof_visualization(df_folds):
+    for fold_num in df_folds:
+        val_df_fold = df_folds[df_folds["fold"] == 1].reset_index(drop=True)
+        # 5 classes here since it is Cassava.
+        dummy_preds_random = np.random_rand(len(val_df_fold), 5)
+        print(
+            "Len of val_df_fold is {} and shape of dummy_preds_random is {}".format(
+                len(val_df_fold), dummy_preds_random.shape
+            )
+        )
+        # val_df_fold
+        oof_df = pd.concat([oof_df, _oof_df])
