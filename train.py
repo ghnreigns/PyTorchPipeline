@@ -369,7 +369,7 @@ def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_f
 
         print("CV score", np.mean(cv_score_list))
         print("Variance", np.var(cv_score_list))
-        print("Five Folds OOF", get_roc(config, oof_df))
+        print("Five Folds OOF", get_oof_roc(config, oof_df))
         oof_df.to_csv(os.path.join(config.paths["save_path"], "oof.csv"))
 
 
