@@ -1,4 +1,28 @@
 import numpy as np
+import sklearn
+import pandas as pd
+
+
+def get_oof_acc(config, result_df):
+    """Get the OOF accuracy of model predictions."""
+    labels = result_df[config.class_col_name].values
+    acc_preds = result_df[[str(c) for c in range(config.num_classes)]].values.argmax(1)
+    oof_acc_score = sklearn.metrics.accuracy_score(y_true=labels, y_pred=acc_preds)
+    return oof_acc_score
+
+
+def get_oof_roc(config, result_df):
+    # max_label = str(np.max(result_df[config.class_col_name].values))
+    # preds = result_df[max_label].values
+    # labels = result_df[config.class_col_name].values
+    # score = sklearn.metrics.roc_auc_score(y_true=labels, y_score=preds, multi_class="ovr")
+
+    labels = result_df[config.class_col_name].values
+    roc_preds = result_df[[str(c) for c in range(config.num_classes)]].values
+    roc_score_dict, avg_roc_score = metrics.multiclass_roc(
+        y_true=labels, y_preds_softmax_array=roc_preds, config=config
+    )
+    return roc_score_dict, avg_roc_score
 
 
 """

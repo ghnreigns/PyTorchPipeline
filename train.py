@@ -22,6 +22,7 @@ import transforms
 from utils import seed_all, seed_worker
 from loss import LabelSmoothingLoss
 import metrics
+from oof import get_oof_acc, get_oof_roc
 
 
 class Trainer:
@@ -299,6 +300,18 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
         transform_norm=True,
         meta_features=None,
     )
+    """
+    Use multiple workers and pinned memory in DataLoader.
+    When using torch.utils.data.DataLoader, set num_workers > 0, rather than the default value of 0, and pin_memory=True,
+    rather than the default value of False. Details of this are explained https://pytorch.org/docs/stable/data.html.
+
+    Szymon Micacz achieves a 2x speed-up for a single training epoch by using four workers and pinned memory.
+
+    A rule of thumb (https://discuss.pytorch.org/t/guidelines-for-assigning-num-workers-to-dataloader/813/5)
+    that people are using to choose the number of workers is to set it to four times the number of available GPUs with both a larger and smaller number of workers leading to a slow down.
+
+    Note that increasing num_workers will increase your CPU memory consumption.
+    """
     train_loader = DataLoader(
         train_set,
         batch_size=config.batch_size,
@@ -324,28 +337,6 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
 ### Ian: Might need some help cleaning up this part, especially when my monitored metric is roc for example,
 ### then it will be good to call get_oof_roc in the train_loop instead of hard coding it.
-
-
-def get_oof_acc(config, result_df):
-    """Get the OOF accuracy of model predictions."""
-    labels = result_df[config.class_col_name].values
-    acc_preds = result_df[[str(c) for c in range(config.num_classes)]].values.argmax(1)
-    oof_acc_score = sklearn.metrics.accuracy_score(y_true=labels, y_pred=acc_preds)
-    return oof_acc_score
-
-
-def get_oof_roc(config, result_df):
-    # max_label = str(np.max(result_df[config.class_col_name].values))
-    # preds = result_df[max_label].values
-    # labels = result_df[config.class_col_name].values
-    # score = sklearn.metrics.roc_auc_score(y_true=labels, y_score=preds, multi_class="ovr")
-
-    labels = result_df[config.class_col_name].values
-    roc_preds = result_df[[str(c) for c in range(config.num_classes)]].values
-    roc_score_dict, avg_roc_score = metrics.multiclass_roc(
-        y_true=labels, y_preds_softmax_array=roc_preds, config=config
-    )
-    return roc_score_dict, avg_roc_score
 
 
 def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_fold=False):
