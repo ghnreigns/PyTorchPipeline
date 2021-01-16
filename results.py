@@ -581,6 +581,59 @@ class Results(abc.ABC):
         return {result.__class__.__name__: summary_computed[result.__class__.__name__] for result in self.results}
 
 
+class TrainingResults(Results):
+    """A class for performing model training with selected results."""
+
+    def __init__(self, trainer, results, config):
+        super().__init__(
+            "training",
+            EmptyContextManager,
+            {"images", "labels", "batch_size", "logits", "loss", "config", "mode"},
+            {"config", "mode"},
+            trainer,
+            results,
+            config,
+        )
+
+    def compute_built_in_per_step_results(self, step, _image_ids, images, labels):
+        images = images.to(self.config.device)
+        labels = labels.to(self.config.device)
+        batch_size = images.shape[0]
+
+        """using amp, https://pytorch.org/docs/stable/notes/amp_examples.html FYI Ian."""
+        if config.use_amp:
+            """I would think clearing gradients here is the correct way, as opposed to calling it last."""
+            self.trainer.optimizer.zero_grad()
+            with torch.cuda.amp.autocast():
+                logits = self.trainer.model(images)
+                loss = self.trainer.criterion(input=logits, target=labels)
+            loss_value = loss.item()
+            self.trainer.scaler.scale(loss).backward()
+            self.trainer.scaler.step(self.trainer.optimizer)
+            self.trainer.scaler.update()
+
+        else:
+            logits = self.trainer.model(images)
+            loss = self.trainer.criterion(input=logits, target=labels)
+            loss_value = loss.item()
+            self.trainer.optimizer.zero_grad()
+            loss.backward()
+            self.trainer.optimizer.step()
+
+        return {
+            "images": images,
+            "labels": labels,
+            "batch_size": batch_size,
+            "logits": logits,
+            "loss": loss_value,
+            "config": self.config,
+            "mode": Mode.TRAINING,
+        }
+
+    def compute_built_in_summary_results(self):
+        return {"config": self.config, "mode": Mode.TRAINING}
+
+
 class ValidationResults(Results):
     """A class for performing model validation with selected results."""
 
@@ -624,44 +677,3 @@ class EmptyContextManager:
 
     def __exit__(self, _exc_type, _exc_val, _exc_tb):
         pass
-
-
-class TrainingResults(Results):
-    """A class for performing model training with selected results."""
-
-    def __init__(self, trainer, results, config):
-        super().__init__(
-            "training",
-            EmptyContextManager,
-            {"images", "labels", "batch_size", "logits", "loss", "config", "mode"},
-            {"config", "mode"},
-            trainer,
-            results,
-            config,
-        )
-
-    def compute_built_in_per_step_results(self, step, _image_ids, images, labels):
-        images = images.to(self.config.device)
-        labels = labels.to(self.config.device)
-        batch_size = images.shape[0]
-        logits = self.trainer.model(images)
-        loss = self.trainer.criterion(input=logits, target=labels)
-
-        loss_value = loss.item()
-
-        self.trainer.optimizer.zero_grad()
-        loss.backward()
-        self.trainer.optimizer.step()
-
-        return {
-            "images": images,
-            "labels": labels,
-            "batch_size": batch_size,
-            "logits": logits,
-            "loss": loss_value,
-            "config": self.config,
-            "mode": Mode.TRAINING,
-        }
-
-    def compute_built_in_summary_results(self):
-        return {"config": self.config, "mode": Mode.TRAINING}

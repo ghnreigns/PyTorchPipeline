@@ -49,6 +49,10 @@ class Trainer:
             optimizer=self.optimizer, **config.scheduler_params[config.scheduler]
         )
 
+        """scaler is only used when use_amp is True, use_amp is inside config."""
+        if config.use_amp:
+            self.scaler = torch.cuda.amp.GradScaler()
+
         self.selected_results_val = [
             results.construct_result(result, self.config) for result in self.config.results_val
         ]
@@ -300,29 +304,24 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
         transform_norm=True,
         meta_features=None,
     )
-    """
-    Use multiple workers and pinned memory in DataLoader.
-    When using torch.utils.data.DataLoader, set num_workers > 0, rather than the default value of 0, and pin_memory=True,
-    rather than the default value of False. Details of this are explained https://pytorch.org/docs/stable/data.html.
 
-    Szymon Micacz achieves a 2x speed-up for a single training epoch by using four workers and pinned memory.
-
-    A rule of thumb (https://discuss.pytorch.org/t/guidelines-for-assigning-num-workers-to-dataloader/813/5)
-    that people are using to choose the number of workers is to set it to four times the number of available GPUs with both a larger and smaller number of workers leading to a slow down.
-
-    Note that increasing num_workers will increase your CPU memory consumption.
-    """
     train_loader = DataLoader(
         train_set,
         batch_size=config.batch_size,
         shuffle=True,
         num_workers=config.num_workers,
         worker_init_fn=seed_worker,
+        pin_memory=True,
     )
 
     val_set = Melanoma(val_df, config, transforms=transforms_val, transform_norm=True, meta_features=None)
     val_loader = DataLoader(
-        val_set, batch_size=config.batch_size, shuffle=False, num_workers=config.num_workers, worker_init_fn=seed_worker
+        val_set,
+        batch_size=config.batch_size,
+        shuffle=False,
+        num_workers=config.num_workers,
+        worker_init_fn=seed_worker,
+        pin_memory=True,
     )
 
     hongnan_classifier = Trainer(model=model, config=config)

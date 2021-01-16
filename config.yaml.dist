@@ -66,6 +66,7 @@ criterion_params:
     alpha: 1
     gamma: 2
     xent: 0.1
+use_amp: True
 result_params:
   average_accuracy: {}
   average_loss: {}

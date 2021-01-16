@@ -7,6 +7,10 @@ import yamale
 
 import results
 
+""" It is worthwhile to nest the config parameters even more, like a nested dict as follows:
+training_hyperparams: {scheduler_params:{}, opt_params:{},... batch_size:{}......}
+"""
+
 
 class YAMLConfig:
     """Stores configuration loaded from a YAML file."""
@@ -28,6 +32,7 @@ optimizer_params: map()
 criterion: str()
 criterion_val: str()
 criterion_params: map()
+use_amp: bool()
 results_val: list(str())
 results_train: list(str())
 monitored_result: str()
