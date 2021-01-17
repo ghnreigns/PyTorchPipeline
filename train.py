@@ -74,8 +74,8 @@ class Trainer:
         self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
 
         self.log(
-            "Trainer prepared. We are using {} device with {} worker(s).".format(
-                self.config.device, self.config.num_workers
+            "Trainer prepared. We are using {} device with {} worker(s).\nThe monitored metric is {}".format(
+                self.config.device, self.config.num_workers, self.config.monitored_result
             )
         )
 
@@ -177,7 +177,7 @@ class Trainer:
                 old_value = self.best_val_results.get(result.__class__.__name__, None)
 
                 if old_value is None:
-                    self.best_val_results[result.__class__.__name__] = old_value
+                    self.best_val_results[result.__class__.__name__] = val_results_computed[result.__class__.__name__]
 
                     if result.__class__.__name__ == self.config.monitored_result:
                         self.save(
@@ -191,12 +191,13 @@ class Trainer:
 
                     continue
 
-                new_value = val_results_computed[result.__class__.__name]
+                new_value = val_results_computed[result.__class__.__name__]
 
                 if result.compare(old_value, new_value):
                     self.best_val_results[result.__class__.__name__] = new_value
 
                     if result.__class__.__name__ == self.config.monitored_result:
+                        self.log("Saving epoch {} of fold {} as best weights".format(self.epoch, fold))
                         self.save(
                             os.path.join(
                                 self.save_path,

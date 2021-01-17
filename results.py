@@ -157,7 +157,11 @@ class average_loss(Result, PerStepReportableResult, ReportableResult, Comparable
         return "Avg Validation Summary Loss: {:.6f}".format(computed_value)
 
     def compare(self, old_value, new_value):
-        return new_value < old_value
+        """@Ian, since here returns a tensor, I will use tensor comparison"""
+        # quick hack to bypass inappropriate comparison between none type and tensor
+        if old_value is None:
+            old_value = torch.as_tensor(np.inf)
+        return torch.gt(old_value, new_value)
 
 
 class average_accuracy(Result, PerStepReportableResult, ReportableResult, ComparableResult):
