@@ -16,7 +16,7 @@ import torch.nn as nn
 import results
 from cross_validate import make_folds
 from dataset import Melanoma
-from model import CustomEfficientNet
+from model import CustomModel
 from config import YAMLConfig
 import transforms
 from utils import seed_all, seed_worker

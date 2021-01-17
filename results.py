@@ -606,7 +606,7 @@ class TrainingResults(Results):
         batch_size = images.shape[0]
 
         """using amp, https://pytorch.org/docs/stable/notes/amp_examples.html FYI Ian."""
-        if config.use_amp:
+        if self.config.use_amp:
             """I would think clearing gradients here is the correct way, as opposed to calling it last."""
             self.trainer.optimizer.zero_grad()
             with torch.cuda.amp.autocast():
