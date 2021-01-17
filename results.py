@@ -158,9 +158,9 @@ class average_loss(Result, PerStepReportableResult, ReportableResult, Comparable
 
     def compare(self, old_value, new_value):
         """@Ian, since here returns a tensor, I will use tensor comparison"""
-        # quick hack to bypass inappropriate comparison between none type and tensor
+        # quick hack to bypass inappropriate comparison between none type and tensor, use config.device
         if old_value is None:
-            old_value = torch.as_tensor(np.inf)
+            old_value = torch.as_tensor(np.inf, device="cuda")
         return torch.gt(old_value, new_value)
 
 
@@ -173,15 +173,15 @@ class average_accuracy(Result, PerStepReportableResult, ReportableResult, Compar
         self.sum = 0
 
     def step(self, y_true, y_preds, batch_size, **kwargs):
-
-        # so we just need to count total num of images / batch_size
-        # self.count += num_steps
+        """
+        We can calculate average accuracy by total num of images / batch_size
+        1. self.count -> total num of images
+        2. self.score -> average accuracy score of the current batch, if batch size = 4, the accuracy score is the average of these 4 images.
+        3. total_score -> average accuracy of current batch * batch_size
+        """
         self.count += batch_size
-        # this part here already got an acc score for the 4 images, so
-        # no need divide batch size
         self.score = sklearn.metrics.accuracy_score(y_true, y_preds)
         total_score = self.score * batch_size
-
         self.sum += total_score
 
         return self.sum / self.count
@@ -345,10 +345,10 @@ def get_function_param_names(func):
     ]
 
 
-# Using globals() bit of a hack that allows us to dynamically generate
-# a dictionary of all available results even if this code is run in a
-# Jupyter Notebook or similar interactive Python environment rather
-# than as a module in the filesystem.
+"""
+Using globals() bit of a hack that allows us to dynamically generate a dictionary of all available results even if this code
+is run in a Jupyter Notebook or similar interactive Python environment rather than as a module in the filesystem.
+"""
 _results = {
     name: result
     for (name, result) in globals().items()
