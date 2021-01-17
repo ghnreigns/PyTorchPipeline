@@ -292,11 +292,12 @@ class multi_class_roc_auc_score(Result, ReportableResult, ComparableResult):
         pass
 
     def compute(self, val_gt_label_array, val_preds_softmax_array, config, **kwargs):
-        score, _ = metrics.multiclass_roc(
+        ##TODO: Accomodate dictionary to be shown as well.
+        score, avg_roc_score = metrics.multiclass_roc(
             y_true=val_gt_label_array, y_preds_softmax_array=val_preds_softmax_array, config=config
         )
 
-        return score
+        return avg_roc_score
 
     def reset(self):
         pass

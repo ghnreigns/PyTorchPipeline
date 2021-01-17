@@ -197,7 +197,7 @@ class Trainer:
                     self.best_val_results[result.__class__.__name__] = new_value
 
                     if result.__class__.__name__ == self.config.monitored_result:
-                        self.log("Saving epoch {} of fold {} as best weights".format(self.epoch, fold))
+                        self.log("Saving epoch {} of fold {} as best weights".format(self.epoch + 1, fold))
                         self.save(
                             os.path.join(
                                 self.save_path,
