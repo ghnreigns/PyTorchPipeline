@@ -7,20 +7,21 @@ Paper: Searching for MobileNetV3 - https://arxiv.org/abs/1905.02244
 Hacked together by / Copyright 2020 Ross Wightman
 """
 import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 try:
-    from torch.hub import load_state_dict_from_url, download_url_to_file
+    from torch.hub import download_url_to_file, load_state_dict_from_url
 except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
-from .activations import get_act_fn, get_act_layer, HardSwish
+from .activations import HardSwish, get_act_fn, get_act_layer
 from .config import layer_config_kwargs
 from .conv2d_layers import select_conv2d
-from .helpers import load_pretrained, filename_from_url
 from .efficientnet_builder import *
+from .helpers import filename_from_url, load_pretrained
 
 __all__ = [
     'mobilenetv3_rw', 'mobilenetv3_large_075', 'mobilenetv3_large_100',

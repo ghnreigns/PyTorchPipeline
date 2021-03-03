@@ -1,12 +1,13 @@
 """A module for performing image augmentations."""
 from abc import ABC, abstractmethod
+
 import albumentations
-from albumentations.pytorch.transforms import ToTensorV2
-from discolight.disco import disco
 import numpy as np
 import torch
-import torchvision
 import torchtoolbox.transform
+import torchvision
+from albumentations.pytorch.transforms import ToTensorV2
+from discolight.disco import disco
 
 from autoaugment.auto_augment import AutoAugment
 

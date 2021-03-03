@@ -4,25 +4,27 @@ import datetime
 import os
 import random
 import time
-import pytz
+
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import GroupKFold
+import pytz
 import sklearn
 import torch
-from torch.utils.data import DataLoader
 import torch.nn as nn
+from sklearn.model_selection import GroupKFold
+from torch.utils.data import DataLoader
 
-import results
-from cross_validate import make_folds
-from dataset import Melanoma
-from model import CustomModel
-from config import YAMLConfig
-import transforms
-from utils import seed_all, seed_worker
-from loss import LabelSmoothingLoss
 import metrics
+import results
+import transforms
+from config import YAMLConfig
+from cross_validate import make_folds
+from dataset import CustomDataset
+from dataset import CustomDataLoader
+from loss import LabelSmoothingLoss
+from model import CustomModel
 from oof import get_oof_acc, get_oof_roc
+from utils import seed_all, seed_worker
 
 
 class Trainer:
@@ -34,15 +36,20 @@ class Trainer:
         self.config = config
         self.early_stopping = early_stopping
         self.epoch = 0
+        # loss history and monitored metrics history stores each epoch's results, and save it to the weights, so later we can access it easily, we can also access it by calling the attribute
+        self.loss_history = []
+        self.monitored_metrics_history = []
         self.save_path = config.paths["save_path"]
         if not os.path.exists(self.save_path):
             os.makedirs(self.save_path)
 
         # Uncomment this if needed to use different val loss #
         # self.criterion = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
-        # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
-        self.criterion = getattr(torch.nn, config.criterion)(
-            **config.criterion_params[config.criterion]
+        self.criterion_train = getattr(torch.nn, config.criterion_train)(
+            **config.criterion_params[config.criterion_train]
+        )
+        self.criterion_val = getattr(torch.nn, config.criterion_val)(
+            **config.criterion_params[config.criterion_val]
         )
         self.optimizer = getattr(torch.optim, config.optimizer)(
             self.model.parameters(), **config.optimizer_params[config.optimizer]
@@ -59,6 +66,7 @@ class Trainer:
             results.construct_result(result, self.config)
             for result in self.config.results_val
         ]
+        # print(self.selected_results_val) -> [<results.average_loss object at 0x0000020CF63C67F0>, <results.average_accuracy object at 0x0000020CF63C68E0>, <results.val_preds_softmax_array object at 0x0000020CF63C6940>, <results.val_roc_auc_score object at 0x0000020CF63C69A0>, <results.multi_class_roc_auc_score object at 0x0000020CF63C69D0>]
 
         self.validation_results = results.ValidationResults(
             self, self.selected_results_val, self.config
@@ -143,9 +151,11 @@ class Trainer:
 
             # Save the current value of all savable validation results
             for result in self.selected_results_val:
+                # Here signifies that val_preds_softmax_array is not savable
                 if not isinstance(result, results.SavableResult):
                     continue
 
+                # gets name
                 savable_name = result.get_save_name(
                     val_results_computed[result.__class__.__name__]
                 )
@@ -164,7 +174,7 @@ class Trainer:
                 for result in self.selected_results_val
                 if isinstance(result, results.ReportableResult)
             ]
-
+            # print(val_reported_results) - > ['Avg Validation Summary Loss: 0.035370', 'Validation Accuracy: 0.996047', 'Validation ROC: 0.261905', 'MultiClass ROC: 0.26190476190476186']
             val_result_str = " | ".join(
                 [
                     "Validation Epoch: {}".format(self.epoch + 1),
@@ -310,6 +320,8 @@ class Trainer:
             for (best_result, value) in self.best_val_results.items()
         }
 
+        print(best_results)
+
         torch.save(
             {
                 "model_state_dict": self.model.state_dict(),
@@ -351,40 +363,40 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
+    data_dict = {
+        "dataset_train_dict": {
+            "df": train_df,
+            "transforms": transforms_train,
+            "transform_norm": True,
+            "meta_features": None,
+            "mode": "train",
+        },
+        "dataset_val_dict": {
+            "df": train_df,
+            "transforms": transforms_val,
+            "transform_norm": True,
+            "meta_features": None,
+            "mode": "train",
+        },
+        "dataloader_train_dict": {
+            "batch_size": config.batch_size,
+            "shuffle": True,
+            "num_workers": config.num_workers,
+            "worker_init_fn": seed_worker,
+            "pin_memory": True,
+        },
+        "dataloader_val_dict": {
+            "batch_size": config.batch_size,
+            "shuffle": False,
+            "num_workers": config.num_workers,
+            "worker_init_fn": seed_worker,
+            "pin_memory": True,
+        },
+    }
 
-    train_set = Melanoma(
-        train_df,
-        config,
-        transforms=transforms_train,
-        transform_norm=True,
-        meta_features=None,
-    )
-
-    train_loader = DataLoader(
-        train_set,
-        batch_size=config.batch_size,
-        shuffle=True,
-        num_workers=config.num_workers,
-        worker_init_fn=seed_worker,
-        pin_memory=True,
-    )
-
-    val_set = Melanoma(
-        val_df,
-        config,
-        transforms=transforms_val,
-        transform_norm=True,
-        meta_features=None,
-    )
-    val_loader = DataLoader(
-        val_set,
-        batch_size=config.batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        worker_init_fn=seed_worker,
-        pin_memory=True,
-    )
-
+    # returns {"Train": train_loader, "Validation": val_loader}
+    dataloader_dict = CustomDataLoader(config=config, data_dict=data_dict).get_loaders()
+    train_loader, val_loader = dataloader_dict["Train"], dataloader_dict["Validation"]
     hongnan_classifier = Trainer(model=model, config=config)
 
     curr_fold_best_checkpoint = hongnan_classifier.fit(train_loader, val_loader, fold)
@@ -411,8 +423,8 @@ def train_loop(
     oof_df = pd.DataFrame()
     if train_one_fold:
         _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold_num)
-        curr_fold_best_score = get_oof_roc(config, _oof_df)
-        print("Fold {} OOF Score is {}".format(fold_num, curr_fold_best_score))
+        # curr_fold_best_score = get_oof_roc(config, _oof_df)
+        # print("Fold {} OOF Score is {}".format(fold_num, curr_fold_best_score))
     else:
         """The below for loop code guarantees fold starts from 1 and not 0. https://stackoverflow.com/questions/33282444/pythonic-way-to-iterate-through-a-range-starting-at-1"""
         for fold in (number + 1 for number in range(config.num_folds)):
@@ -438,7 +450,11 @@ if __name__ == "__main__":
     yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
     train_csv = pd.read_csv(yaml_config.paths["csv_path"])
-    folds = make_folds(train_csv, yaml_config)
+
+    df_folds = make_folds(train_csv, yaml_config)
+    if yaml_config.debug:
+        df_folds = df_folds.sample(frac=0.01)
+
     train_all_folds = train_loop(
-        df_folds=folds, config=yaml_config, fold_num=None, train_one_fold=False
+        df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
     )

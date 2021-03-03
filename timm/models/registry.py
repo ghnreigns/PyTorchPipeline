@@ -2,9 +2,9 @@
 Hacked together by / Copyright 2020 Ross Wightman
 """
 
-import sys
-import re
 import fnmatch
+import re
+import sys
 from collections import defaultdict
 
 __all__ = ['list_models', 'is_model', 'model_entrypoint', 'list_modules', 'is_model_in_modules']

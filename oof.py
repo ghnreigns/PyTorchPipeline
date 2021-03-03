@@ -1,6 +1,6 @@
 import numpy as np
-import sklearn
 import pandas as pd
+import sklearn
 
 
 def get_oof_acc(config, result_df):

@@ -6,14 +6,14 @@ https://github.com/NVIDIA/apex/commit/d5e2bb4bdeedd27b1dfaf5bb2b24d6c000dee9be#d
 Hacked together by / Copyright 2020 Ross Wightman
 """
 
-import torch.utils.data
 import numpy as np
+import torch.utils.data
 
-from .transforms_factory import create_transform
 from .constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .distributed_sampler import OrderedDistributedSampler
-from .random_erasing import RandomErasing
 from .mixup import FastCollateMixup
+from .random_erasing import RandomErasing
+from .transforms_factory import create_transform
 
 
 def fast_collate(batch):

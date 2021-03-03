@@ -1,6 +1,6 @@
 import logging
-from .constants import *
 
+from .constants import *
 
 _logger = logging.getLogger(__name__)
 

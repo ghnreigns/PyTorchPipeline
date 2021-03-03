@@ -3,8 +3,8 @@
 Hacked together by / Copyright 2020 Ross Wightman
 """
 import logging
-import os
 import math
+import os
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Callable
@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 
-from .features import FeatureListNet, FeatureDictNet, FeatureHookNet
+from .features import FeatureDictNet, FeatureHookNet, FeatureListNet
 from .layers import Conv2dSame, Linear
 
 _logger = logging.getLogger(__name__)

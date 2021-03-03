@@ -1,6 +1,7 @@
 from enum import Enum
-import numpy as np
 from typing import Union
+
+import numpy as np
 
 
 class Mode(Enum):

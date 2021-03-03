@@ -14,7 +14,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .helpers import build_model_with_cfg
-from .layers import SpaceToDepthModule, AntiAliasDownsampleLayer, InplaceAbn, ClassifierHead, SEModule
+from .layers import (AntiAliasDownsampleLayer, ClassifierHead, InplaceAbn,
+                     SEModule, SpaceToDepthModule)
 from .registry import register_model
 
 __all__ = ['tresnet_m', 'tresnet_l', 'tresnet_xl']

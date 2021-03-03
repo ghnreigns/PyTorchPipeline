@@ -6,14 +6,13 @@ Hacked together by / Copyright 2020 Ross Wightman
 """
 
 import glob
+import logging
 import operator
 import os
-import logging
 
 import torch
 
-from .model import unwrap_model, get_state_dict
-
+from .model import get_state_dict, unwrap_model
 
 _logger = logging.getLogger(__name__)
 

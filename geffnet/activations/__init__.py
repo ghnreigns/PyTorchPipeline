@@ -1,8 +1,9 @@
-from geffnet import config
-from geffnet.activations.activations_me import *
-from geffnet.activations.activations_jit import *
-from geffnet.activations.activations import *
 import torch
+
+from geffnet import config
+from geffnet.activations.activations import *
+from geffnet.activations.activations_jit import *
+from geffnet.activations.activations_me import *
 
 _has_silu = 'silu' in dir(torch.nn.functional)
 

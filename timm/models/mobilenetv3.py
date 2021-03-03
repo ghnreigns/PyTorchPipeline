@@ -7,18 +7,23 @@ Paper: Searching for MobileNetV3 - https://arxiv.org/abs/1905.02244
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
+from typing import List
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from typing import List
+from timm.data import (IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD,
+                       IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD)
 
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
-from .efficientnet_blocks import round_channels, resolve_bn_args, resolve_act_layer, BN_EPS_TF_DEFAULT
-from .efficientnet_builder import EfficientNetBuilder, decode_arch_def, efficientnet_init_weights
-from .features import FeatureInfo, FeatureHooks
+from .efficientnet_blocks import (BN_EPS_TF_DEFAULT, resolve_act_layer,
+                                  resolve_bn_args, round_channels)
+from .efficientnet_builder import (EfficientNetBuilder, decode_arch_def,
+                                   efficientnet_init_weights)
+from .features import FeatureHooks, FeatureInfo
 from .helpers import build_model_with_cfg, default_cfg_for_features
-from .layers import SelectAdaptivePool2d, Linear, create_conv2d, get_act_fn, hard_sigmoid
+from .layers import (Linear, SelectAdaptivePool2d, create_conv2d, get_act_fn,
+                     hard_sigmoid)
 from .registry import register_model
 
 __all__ = ['MobileNetV3']

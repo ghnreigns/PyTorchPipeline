@@ -1,41 +1,38 @@
 # -*- coding: utf-8 -*-
 
-import time
-import os
-import math
 import argparse
-from glob import glob
-from collections import OrderedDict
+import math
+import os
 import random
+import time
 import warnings
+from collections import OrderedDict
 from datetime import datetime
-
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import pandas as pd
-import joblib
-
-from sklearn.model_selection import train_test_split
-from skimage.io import imread, imsave
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
-import torch.optim as optim
-from torch.optim import lr_scheduler
-from torch.utils.data import DataLoader
-import torch.backends.cudnn as cudnn
-import torchvision
-from torchvision import datasets, models, transforms
-
-from dataset import Dataset
+from glob import glob
 
 import archs
-from metrics import dice_coef, batch_iou, mean_iou, iou_score
+import joblib
 import losses
-from utils import str2bool, count_params
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import torch
+import torch.backends.cudnn as cudnn
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+from skimage.io import imread, imsave
+from sklearn.model_selection import train_test_split
+from torch.autograd import Variable
+from torch.optim import lr_scheduler
+from torch.utils.data import DataLoader
+from torchvision import datasets, models, transforms
+from tqdm import tqdm
+
+from dataset import Dataset
+from metrics import batch_iou, dice_coef, iou_score, mean_iou
+from utils import count_params, str2bool
 
 
 def parse_args():

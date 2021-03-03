@@ -1,15 +1,15 @@
 """Some utility functions."""
-from collections import Counter
 import glob
 import os
 import random
-from typing import Optional, List
+from collections import Counter
+from typing import List, Optional
 
 import cv2
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import torch
+from tqdm import tqdm
 
 
 def rsetattr(obj, attr, val):

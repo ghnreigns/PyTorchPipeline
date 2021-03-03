@@ -1,9 +1,10 @@
 """A perser for YAML configuration."""
 import inspect
 import multiprocessing
+
 import torch
-import yaml
 import yamale
+import yaml
 
 import results
 
@@ -29,10 +30,11 @@ train_step_scheduler: bool()
 val_step_scheduler: bool()
 optimizer: str()
 optimizer_params: map()
-criterion: str()
+criterion_train: str()
 criterion_val: str()
 criterion_params: map()
 use_amp: bool()
+debug: bool()
 results_val: list(str())
 results_train: list(str())
 monitored_result: str()
@@ -117,7 +119,12 @@ augmentation:
                     item_name,
                     item_name,
                     params_key,
-                    "\n".join(["{}: {}".format(name, value) for (name, value) in default_values.items()]),
+                    "\n".join(
+                        [
+                            "{}: {}".format(name, value)
+                            for (name, value) in default_values.items()
+                        ]
+                    ),
                 )
             )
 
@@ -137,12 +144,16 @@ augmentation:
 
         for result in self._config["results_val"]:
             configuration_updated |= self._generate_default_configuration(
-                result, "result_params", lambda metric: results._results[result].__init__
+                result,
+                "result_params",
+                lambda metric: results._results[result].__init__,
             )
 
         for result in self._config["results_train"]:
             configuration_updated |= self._generate_default_configuration(
-                result, "result_params", lambda metric: results._results[result].__init__
+                result,
+                "result_params",
+                lambda metric: results._results[result].__init__,
             )
 
         configuration_updated |= self._generate_default_configuration(
@@ -152,19 +163,33 @@ augmentation:
         )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["criterion"], "criterion_params", lambda criterion: getattr(torch.nn, criterion).__init__
+            self._config["criterion_train"],
+            "criterion_params",
+            lambda criterion: getattr(torch.nn, criterion).__init__,
         )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["criterion_val"], "criterion_params", lambda criterion: getattr(torch.nn, criterion).__init__
+            self._config["criterion_val"],
+            "criterion_params",
+            lambda criterion: getattr(torch.nn, criterion).__init__,
         )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["optimizer"], "optimizer_params", lambda optimizer: getattr(torch.optim, optimizer).__init__
+            self._config["criterion_val"],
+            "criterion_params",
+            lambda criterion: getattr(torch.nn, criterion).__init__,
         )
 
         configuration_updated |= self._generate_default_configuration(
-            self._config["scheduler"], "scheduler_params", lambda scheduler: getattr(torch.optim.lr_scheduler).__init__
+            self._config["optimizer"],
+            "optimizer_params",
+            lambda optimizer: getattr(torch.optim, optimizer).__init__,
+        )
+
+        configuration_updated |= self._generate_default_configuration(
+            self._config["scheduler"],
+            "scheduler_params",
+            lambda scheduler: getattr(torch.optim.lr_scheduler).__init__,
         )
 
         if configuration_updated and save_updated_configuration:

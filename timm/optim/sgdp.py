@@ -8,10 +8,12 @@ Copyright (c) 2020-present NAVER Corp.
 MIT license
 """
 
+import math
+
 import torch
 import torch.nn as nn
 from torch.optim.optimizer import Optimizer, required
-import math
+
 
 class SGDP(Optimizer):
     def __init__(self, params, lr=required, momentum=0, dampening=0,

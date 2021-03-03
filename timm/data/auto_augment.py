@@ -17,13 +17,13 @@ Papers:
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import random
 import math
+import random
 import re
-from PIL import Image, ImageOps, ImageEnhance, ImageChops
-import PIL
-import numpy as np
 
+import numpy as np
+import PIL
+from PIL import Image, ImageChops, ImageEnhance, ImageOps
 
 _PIL_VER = tuple([int(x) for x in PIL.__version__.split('.')[:2]])
 

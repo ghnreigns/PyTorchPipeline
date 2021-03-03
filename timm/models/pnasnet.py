@@ -12,7 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .helpers import build_model_with_cfg
-from .layers import ConvBnAct, create_conv2d, create_pool2d, create_classifier
+from .layers import ConvBnAct, create_classifier, create_conv2d, create_pool2d
 from .registry import register_model
 
 __all__ = ['PNASNet5Large']

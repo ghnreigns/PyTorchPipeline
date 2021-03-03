@@ -8,9 +8,9 @@
 
 """A configurable system for computing model training and validation results."""
 import abc
-from enum import Enum
 import inspect
 import time
+from enum import Enum
 
 import networkx as nx
 import numpy as np
@@ -164,7 +164,9 @@ class average_loss(Result, PerStepReportableResult, ReportableResult, Comparable
         return torch.gt(old_value, new_value)
 
 
-class average_accuracy(Result, PerStepReportableResult, ReportableResult, ComparableResult):
+class average_accuracy(
+    Result, PerStepReportableResult, ReportableResult, ComparableResult
+):
     """A result for computing average prediction accuracy."""
 
     def __init__(self):
@@ -273,7 +275,9 @@ class val_roc_auc_score(Result, ReportableResult, ComparableResult):
         pass
 
     def compute(self, val_gt_label_array, val_preds_roc_array, **kwargs):
-        return sklearn.metrics.roc_auc_score(y_true=val_gt_label_array, y_score=val_preds_roc_array)
+        return sklearn.metrics.roc_auc_score(
+            y_true=val_gt_label_array, y_score=val_preds_roc_array
+        )
 
     def reset(self):
         pass
@@ -294,7 +298,9 @@ class multi_class_roc_auc_score(Result, ReportableResult, ComparableResult):
     def compute(self, val_gt_label_array, val_preds_softmax_array, config, **kwargs):
         ##TODO: Accomodate dictionary to be shown as well.
         score, avg_roc_score = metrics.multiclass_roc(
-            y_true=val_gt_label_array, y_preds_softmax_array=val_preds_softmax_array, config=config
+            y_true=val_gt_label_array,
+            y_preds_softmax_array=val_preds_softmax_array,
+            config=config,
         )
 
         return avg_roc_score
@@ -353,7 +359,11 @@ is run in a Jupyter Notebook or similar interactive Python environment rather th
 _results = {
     name: result
     for (name, result) in globals().items()
-    if (inspect.isclass(result) and not inspect.isabstract(result) and issubclass(result, (Result, PerStepResult)))
+    if (
+        inspect.isclass(result)
+        and not inspect.isabstract(result)
+        and issubclass(result, (Result, PerStepResult))
+    )
 }
 
 
@@ -494,7 +504,9 @@ class Results(abc.ABC):
 
             # Turn the set of all needed results into a map for easily
             # fetching the needed results by name.
-            used_results = {result.__class__.__name__: result for result in used_results}
+            used_results = {
+                result.__class__.__name__: result for result in used_results
+            }
 
             # Get the order the results must be computed in
             solved_order = nx.algorithms.dag.topological_sort(g)
@@ -512,17 +524,29 @@ class Results(abc.ABC):
         )
 
         self.per_step_results = compute_computation_order(
-            self.summary_results, lambda result: result.step, built_in_dependencies_per_step
+            self.summary_results,
+            lambda result: result.step,
+            built_in_dependencies_per_step,
         )
 
         self.trainer.log(
-            "Per-Step Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.per_step_results]))
+            "Per-Step Results: {}".format(
+                ", ".join(
+                    [metric.__class__.__name__ for metric in self.per_step_results]
+                )
+            )
         )
         self.trainer.log(
-            "Summary Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.summary_results]))
+            "Summary Results: {}".format(
+                ", ".join(
+                    [metric.__class__.__name__ for metric in self.summary_results]
+                )
+            )
         )
         self.trainer.log(
-            "Selected Results: {}".format(", ".join([metric.__class__.__name__ for metric in self.results]))
+            "Selected Results: {}".format(
+                ", ".join([metric.__class__.__name__ for metric in self.results])
+            )
         )
 
     @abc.abstractmethod
@@ -546,7 +570,9 @@ class Results(abc.ABC):
 
                 # Compute all the pre-computed dependencies available
                 # to all results
-                step_computed = self.compute_built_in_per_step_results(step, image_ids, images, labels)
+                step_computed = self.compute_built_in_per_step_results(
+                    step, image_ids, images, labels
+                )
 
                 for result in self.per_step_results:
 
@@ -556,7 +582,9 @@ class Results(abc.ABC):
                     # step(), we would have to select only the step results
                     # explicitly asked for in step(), or we would get an
                     # invalid keyword argument exception.
-                    step_computed[result.__class__.__name__] = result.step(**step_computed)
+                    step_computed[result.__class__.__name__] = result.step(
+                        **step_computed
+                    )
 
                 if self.config.verbose and step % self.config.verbose_step == 0:
                     end_time = time.time()
@@ -568,7 +596,9 @@ class Results(abc.ABC):
 
                     results_str = ", ".join(
                         [
-                            "{} steps: {} / {}".format(self.results_type, step, len(loader)),
+                            "{} steps: {} / {}".format(
+                                self.results_type, step, len(loader)
+                            ),
                             *reported_computed,
                             "time: {:.3f}".format(end_time - start_time),
                         ]
@@ -581,9 +611,14 @@ class Results(abc.ABC):
 
         # Now compute the summary phase of all summary results
         for result in self.summary_results:
-            summary_computed[result.__class__.__name__] = result.compute(**summary_computed)
+            summary_computed[result.__class__.__name__] = result.compute(
+                **summary_computed
+            )
 
-        return {result.__class__.__name__: summary_computed[result.__class__.__name__] for result in self.results}
+        return {
+            result.__class__.__name__: summary_computed[result.__class__.__name__]
+            for result in self.results
+        }
 
 
 class TrainingResults(Results):
@@ -611,7 +646,7 @@ class TrainingResults(Results):
             self.trainer.optimizer.zero_grad()
             with torch.cuda.amp.autocast():
                 logits = self.trainer.model(images)
-                loss = self.trainer.criterion(input=logits, target=labels)
+                loss = self.trainer.criterion_train(input=logits, target=labels)
             loss_value = loss.item()
             self.trainer.scaler.scale(loss).backward()
             self.trainer.scaler.step(self.trainer.optimizer)
@@ -619,7 +654,7 @@ class TrainingResults(Results):
 
         else:
             logits = self.trainer.model(images)
-            loss = self.trainer.criterion(input=logits, target=labels)
+            loss = self.trainer.criterion_train(input=logits, target=labels)
             loss_value = loss.item()
             self.trainer.optimizer.zero_grad()
             loss.backward()
@@ -658,7 +693,7 @@ class ValidationResults(Results):
         images = images.to(self.config.device)
         labels = labels.to(self.config.device)
         logits = self.trainer.model(images)
-        loss = self.trainer.criterion(input=logits, target=labels)
+        loss = self.trainer.criterion_val(input=logits, target=labels)
 
         return {
             "images": images,

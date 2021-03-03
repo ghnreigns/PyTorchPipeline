@@ -5,12 +5,13 @@ Lifted from https://github.com/pytorch/fairseq/blob/master/fairseq/optim/adafact
 Original header/copyright below.
 
 """
+import math
+
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import torch
-import math
 
 
 class Adafactor(torch.optim.Optimizer):

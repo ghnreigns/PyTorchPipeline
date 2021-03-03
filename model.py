@@ -1,8 +1,10 @@
 """A module for constructing machine learning models."""
+import functools
+
 import torch
+
 import geffnet
 import timm
-import functools
 from utils import rsetattr
 
 

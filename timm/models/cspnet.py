@@ -17,10 +17,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import build_model_with_cfg
-from .layers import ClassifierHead, ConvBnAct, DropPath, create_attn, get_norm_act_layer
-from .registry import register_model
 
+from .helpers import build_model_with_cfg
+from .layers import (ClassifierHead, ConvBnAct, DropPath, create_attn,
+                     get_norm_act_layer)
+from .registry import register_model
 
 __all__ = ['CspNet']  # model_registry will add each entrypoint fn to this
 

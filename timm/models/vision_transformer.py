@@ -20,15 +20,17 @@ for some einops/einsum fun
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import torch
-import torch.nn as nn
 from functools import partial
 
+import torch
+import torch.nn as nn
+
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+
 from .helpers import load_pretrained
 from .layers import DropPath, to_2tuple, trunc_normal_
-from .resnet import resnet26d, resnet50d
 from .registry import register_model
+from .resnet import resnet26d, resnet50d
 
 
 def _cfg(url='', **kwargs):

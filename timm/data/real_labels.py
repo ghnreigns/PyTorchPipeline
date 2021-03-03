@@ -4,8 +4,9 @@ Based on Numpy example at https://github.com/google-research/reassessed-imagenet
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import os
 import json
+import os
+
 import numpy as np
 
 

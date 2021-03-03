@@ -18,11 +18,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .registry import register_model
-from .helpers import build_model_with_cfg
-from .layers import ConvBnAct, SeparableConvBnAct, BatchNormAct2d, ClassifierHead, DropPath,\
-    create_attn, create_norm_act, get_norm_act_layer
 
+from .helpers import build_model_with_cfg
+from .layers import (BatchNormAct2d, ClassifierHead, ConvBnAct, DropPath,
+                     SeparableConvBnAct, create_attn, create_norm_act,
+                     get_norm_act_layer)
+from .registry import register_model
 
 # model cfgs adapted from https://github.com/youngwanLEE/vovnet-detectron2 &
 # https://github.com/stigma0617/VoVNet.pytorch/blob/master/models_vovnet/vovnet.py

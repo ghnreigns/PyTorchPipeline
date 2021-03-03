@@ -1,6 +1,6 @@
+import pandas as pd
 from IPython.display import display
 from sklearn.model_selection import GroupKFold, StratifiedKFold
-import pandas as pd
 
 ### Problem 4: I am thinking we can add just one flag in config.yaml so that we can choose whether to use skf or gkf. 
 ### Something like make_folds(train_csv: pd.DataFrame, config) -> pd.DataFrame: if config.cv_schema== 'skf' etc etc

@@ -27,19 +27,20 @@ A generic MobileNet class with building blocks to support a variety of models:
 Hacked together by / Copyright 2020 Ross Wightman
 """
 import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 try:
-    from torch.hub import load_state_dict_from_url, download_url_to_file
+    from torch.hub import download_url_to_file, load_state_dict_from_url
 except ImportError:
     from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
-from .config import layer_config_kwargs, is_scriptable
+from .config import is_scriptable, layer_config_kwargs
 from .conv2d_layers import select_conv2d
-from .helpers import load_pretrained, filename_from_url
 from .efficientnet_builder import *
+from .helpers import filename_from_url, load_pretrained
 
 __all__ = [
     "GenEfficientNet",

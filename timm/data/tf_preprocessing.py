@@ -22,8 +22,8 @@ Hacked together by / Copyright 2020 Ross Wightman
 # limitations under the License.
 # ==============================================================================
 """ImageNet preprocessing for MnasNet."""
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 IMAGE_SIZE = 224
 CROP_PADDING = 32

@@ -1,10 +1,10 @@
 seed: 1930
-num_workers: auto
+num_workers: 0 # 0 when using from Windows 
 num_classes: 2
 class_list:
   - 0
   - 1
-batch_size: 32
+batch_size: 8
 n_epochs: 8
 scheduler: StepLR
 scheduler_params:
@@ -49,7 +49,7 @@ optimizer_params:
     eps: 1.e-8
     weight_decay: 1.e-6
     amsgrad: False
-criterion: CrossEntropyLoss
+criterion_train: CrossEntropyLoss
 criterion_val: CrossEntropyLoss
 criterion_params:
   CrossEntropyLoss:
@@ -67,6 +67,7 @@ criterion_params:
     gamma: 2
     xent: 0.1
 use_amp: False
+debug: True
 result_params:
   average_accuracy: {}
   average_loss: {}
@@ -91,11 +92,11 @@ image_col_name: image_name
 class_col_name: target
 group_kfold_split: PatientID
 paths:
-  log_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/log.txt
-  train_path: /content/train/
-  csv_path: /content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv
-  save_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/10th-Jan-V1
-  model_weight_path_folder: /content/drive/My Drive/pretrained-effnet-weights
+  log_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/saved_weights/log.txt
+  train_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/input/train/train
+  csv_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/input/train.csv
+  save_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/saved_weights
+  model_weight_path_folder: ./efficientnet-weights
 model_factory: geffnet
 model_name: tf_efficientnet_b2_ns
 device: auto

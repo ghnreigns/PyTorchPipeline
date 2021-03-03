@@ -13,7 +13,6 @@ import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-
 __all__ = ['swish_me', 'SwishMe', 'mish_me', 'MishMe',
            'hard_sigmoid_me', 'HardSigmoidMe', 'hard_swish_me', 'HardSwishMe']
 

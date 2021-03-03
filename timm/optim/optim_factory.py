@@ -16,7 +16,7 @@ from .rmsprop_tf import RMSpropTF
 from .sgdp import SGDP
 
 try:
-    from apex.optimizers import FusedNovoGrad, FusedAdam, FusedLAMB, FusedSGD
+    from apex.optimizers import FusedAdam, FusedLAMB, FusedNovoGrad, FusedSGD
     has_apex = True
 except ImportError:
     has_apex = False

@@ -2,14 +2,13 @@
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import torch.utils.data as data
-
 import os
 import re
-import torch
 import tarfile
-from PIL import Image
 
+import torch
+import torch.utils.data as data
+from PIL import Image
 
 IMG_EXTENSIONS = ['.png', '.jpg', '.jpeg']
 

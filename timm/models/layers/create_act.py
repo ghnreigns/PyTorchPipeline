@@ -4,7 +4,7 @@ Hacked together by / Copyright 2020 Ross Wightman
 from .activations import *
 from .activations_jit import *
 from .activations_me import *
-from .config import is_exportable, is_scriptable, is_no_jit
+from .config import is_exportable, is_no_jit, is_scriptable
 
 # PyTorch has an optimized, native 'silu' (aka 'swish') operator as of PyTorch 1.7. This code
 # will use native version if present. Eventually, the custom Swish layers will be removed

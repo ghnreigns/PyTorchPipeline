@@ -1,22 +1,22 @@
-import os
 import argparse
-import numpy as np
-from tqdm import tqdm
-import pandas as pd
-import joblib
+import os
 from collections import OrderedDict
 
+import joblib
+import numpy as np
+import pandas as pd
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim import lr_scheduler
-import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+from auto_augment import AutoAugment, Cutout
+from torch.optim import lr_scheduler
+from tqdm import tqdm
+from wide_resnet import WideResNet
 
 from utils import *
-from wide_resnet import WideResNet
-from auto_augment import AutoAugment, Cutout
 
 
 def parse_args():

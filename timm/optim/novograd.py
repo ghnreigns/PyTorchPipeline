@@ -4,9 +4,10 @@ Paper: `Stochastic Gradient Methods with Layer-wise Adaptive Moments for Trainin
     - https://arxiv.org/abs/1905.11286
 """
 
+import math
+
 import torch
 from torch.optim.optimizer import Optimizer
-import math
 
 
 class NovoGrad(Optimizer):

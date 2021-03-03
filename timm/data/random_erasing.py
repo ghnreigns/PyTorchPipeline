@@ -5,8 +5,9 @@ Copyright Zhun Zhong & Liang Zheng
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import random
 import math
+import random
+
 import torch
 
 

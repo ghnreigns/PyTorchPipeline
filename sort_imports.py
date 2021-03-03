@@ -14,7 +14,6 @@ from typing import List, Optional
 
 import albumentations
 import cv2
-import geffnet
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -34,6 +33,8 @@ from torch.optim import *
 from torch.utils.data import DataLoader, Dataset, Subset
 from torchtoolbox.transform import Cutout
 from tqdm import tqdm
+
+import geffnet
 
 # sys.path.append("../input/hongnangeffnet/gen-efficientnet-pytorch-master-hongnan")
 # sys.path.append("../input/autoaug")

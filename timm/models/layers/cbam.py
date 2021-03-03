@@ -9,8 +9,9 @@ Hacked together by / Copyright 2020 Ross Wightman
 """
 
 import torch
-from torch import nn as nn
 import torch.nn.functional as F
+from torch import nn as nn
+
 from .conv_bn_act import ConvBnAct
 
 
