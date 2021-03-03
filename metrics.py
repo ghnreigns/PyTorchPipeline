@@ -8,7 +8,9 @@ def multiclass_roc(y_true, y_preds_softmax_array, config):
         """
         Get y_true_multilabel binarized version for each loop (end of each epoch).
         """
-        y_true_multiclass_array = sklearn.preprocessing.label_binarize(y_true, classes=config.class_list)
+        y_true_multiclass_array = sklearn.preprocessing.label_binarize(
+            y_true, classes=config.class_list
+        )
         y_true_for_curr_class = y_true_multiclass_array[:, label_num]
         y_preds_for_curr_class = y_preds_softmax_array[:, label_num]
         """

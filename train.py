@@ -41,7 +41,9 @@ class Trainer:
         # Uncomment this if needed to use different val loss #
         # self.criterion = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
         # self.criterion_val = getattr(torch.nn, config.criterion_val)(**config.criterion_params[config.criterion_val])
-        self.criterion = getattr(torch.nn, config.criterion)(**config.criterion_params[config.criterion])
+        self.criterion = getattr(torch.nn, config.criterion)(
+            **config.criterion_params[config.criterion]
+        )
         self.optimizer = getattr(torch.optim, config.optimizer)(
             self.model.parameters(), **config.optimizer_params[config.optimizer]
         )
@@ -54,16 +56,22 @@ class Trainer:
             self.scaler = torch.cuda.amp.GradScaler()
 
         self.selected_results_val = [
-            results.construct_result(result, self.config) for result in self.config.results_val
+            results.construct_result(result, self.config)
+            for result in self.config.results_val
         ]
 
-        self.validation_results = results.ValidationResults(self, self.selected_results_val, self.config)
+        self.validation_results = results.ValidationResults(
+            self, self.selected_results_val, self.config
+        )
 
         self.selected_results_train = [
-            results.construct_result(result, self.config) for result in self.config.results_train
+            results.construct_result(result, self.config)
+            for result in self.config.results_train
         ]
 
-        self.training_results = results.TrainingResults(self, self.selected_results_train, self.config)
+        self.training_results = results.TrainingResults(
+            self, self.selected_results_train, self.config
+        )
 
         # The current-known best values for selected ComparableResult
         # validation results
@@ -71,23 +79,31 @@ class Trainer:
         # The current-known values for selected savable validation results
         self.saved_val_results = {}
         """https://stackoverflow.com/questions/1398674/display-the-time-in-a-different-time-zone"""
-        self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d")
+        self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime(
+            "%Y-%m-%d"
+        )
 
         self.log(
             "Trainer prepared. We are using {} device with {} worker(s).\nThe monitored metric is {}".format(
-                self.config.device, self.config.num_workers, self.config.monitored_result
+                self.config.device,
+                self.config.num_workers,
+                self.config.monitored_result,
             )
         )
 
     def fit(self, train_loader, val_loader, fold: int):
         """Fit the model on the given fold."""
-        self.log("Training on Fold {} and using {}".format(fold, self.config.model_name))
+        self.log(
+            "Training on Fold {} and using {}".format(fold, self.config.model_name)
+        )
 
         for _epoch in range(self.config.n_epochs):
             # Getting the learning rate after each epoch!
             lr = self.optimizer.param_groups[0]["lr"]
 
-            timestamp = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime("%Y-%m-%d %H-%M-%S")
+            timestamp = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime(
+                "%Y-%m-%d %H-%M-%S"
+            )
             # printing the lr and the timestamp after each epoch.
             self.log("\n{}\nLR: {}".format(timestamp, lr))
 
@@ -98,7 +114,9 @@ class Trainer:
             # end time of training on the training set
             train_end_time = time.time()
             # formatting time to make it nicer
-            train_elapsed_time = time.strftime("%H:%M:%S", time.gmtime(train_end_time - train_start_time))
+            train_elapsed_time = time.strftime(
+                "%H:%M:%S", time.gmtime(train_end_time - train_start_time)
+            )
 
             train_reported_results = [
                 result.report(train_results_computed[result.__class__.__name__])
@@ -119,21 +137,27 @@ class Trainer:
             val_start_time = time.time()
             val_results_computed = self.valid_one_epoch(val_loader)
             val_end_time = time.time()
-            val_elapsed_time = time.strftime("%H:%M:%S", time.gmtime(val_end_time - val_start_time))
+            val_elapsed_time = time.strftime(
+                "%H:%M:%S", time.gmtime(val_end_time - val_start_time)
+            )
 
             # Save the current value of all savable validation results
             for result in self.selected_results_val:
                 if not isinstance(result, results.SavableResult):
                     continue
 
-                savable_name = result.get_save_name(val_results_computed[result.__class__.__name__])
+                savable_name = result.get_save_name(
+                    val_results_computed[result.__class__.__name__]
+                )
 
                 # If savable_name is reported as None, we don't save the
                 # result value.
                 if savable_name is None:
                     continue
 
-                self.saved_val_results[savable_name] = val_results_computed[result.__class__.__name__]
+                self.saved_val_results[savable_name] = val_results_computed[
+                    result.__class__.__name__
+                ]
 
             val_reported_results = [
                 result.report(val_results_computed[result.__class__.__name__])
@@ -161,7 +185,11 @@ class Trainer:
                 """
 
                 self.best_val_results[self.config.monitored_result] = best_score
-                self.save("{}_best_{}_fold_{}.pt".format(self.config.model_name, self.config.monitored_result, fold))
+                self.save(
+                    "{}_best_{}_fold_{}.pt".format(
+                        self.config.model_name, self.config.monitored_result, fold
+                    )
+                )
                 if early_stop:
                     break
 
@@ -177,14 +205,19 @@ class Trainer:
                 old_value = self.best_val_results.get(result.__class__.__name__, None)
 
                 if old_value is None:
-                    self.best_val_results[result.__class__.__name__] = val_results_computed[result.__class__.__name__]
+                    self.best_val_results[
+                        result.__class__.__name__
+                    ] = val_results_computed[result.__class__.__name__]
 
                     if result.__class__.__name__ == self.config.monitored_result:
                         self.save(
                             os.path.join(
                                 self.save_path,
                                 "{}_{}_best_{}_fold_{}.pt".format(
-                                    self.date, self.config.model_name, self.config.monitored_result, fold
+                                    self.date,
+                                    self.config.model_name,
+                                    self.config.monitored_result,
+                                    fold,
                                 ),
                             )
                         )
@@ -197,12 +230,19 @@ class Trainer:
                     self.best_val_results[result.__class__.__name__] = new_value
 
                     if result.__class__.__name__ == self.config.monitored_result:
-                        self.log("Saving epoch {} of fold {} as best weights".format(self.epoch + 1, fold))
+                        self.log(
+                            "Saving epoch {} of fold {} as best weights".format(
+                                self.epoch + 1, fold
+                            )
+                        )
                         self.save(
                             os.path.join(
                                 self.save_path,
                                 "{}_{}_best_{}_fold_{}.pt".format(
-                                    self.date, self.config.model_name, self.config.monitored_result, fold
+                                    self.date,
+                                    self.config.model_name,
+                                    self.config.monitored_result,
+                                    fold,
                                 ),
                             )
                         )
@@ -211,8 +251,12 @@ class Trainer:
             ReduceLROnPlateau needs to step(monitered_metrics) because of the mode argument.
             """
             if self.config.val_step_scheduler:
-                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                    self.scheduler.step(val_results_computed[self.config.monitored_result])
+                if isinstance(
+                    self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau
+                ):
+                    self.scheduler.step(
+                        val_results_computed[self.config.monitored_result]
+                    )
                 else:
                     self.scheduler.step()
 
@@ -228,7 +272,10 @@ class Trainer:
             os.path.join(
                 self.save_path,
                 "{}_{}_best_{}_fold_{}.pt".format(
-                    self.date, self.config.model_name, self.config.monitored_result, fold
+                    self.date,
+                    self.config.model_name,
+                    self.config.monitored_result,
+                    fold,
                 ),
             )
         )
@@ -258,7 +305,10 @@ class Trainer:
         OOF predictions for each fold is merely the best score for that fold."""
         self.model.eval()
 
-        best_results = {"best_{}".format(best_result): value for (best_result, value) in self.best_val_results.items()}
+        best_results = {
+            "best_{}".format(best_result): value
+            for (best_result, value) in self.best_val_results.items()
+        }
 
         torch.save(
             {
@@ -292,8 +342,12 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
     augmentations_class = getattr(transforms, config.augmentations_class)
 
-    transforms_train = augmentations_class.from_config(config.augmentations_train[config.augmentations_class])
-    transforms_val = augmentations_class.from_config(config.augmentations_val[config.augmentations_class])
+    transforms_train = augmentations_class.from_config(
+        config.augmentations_train[config.augmentations_class]
+    )
+    transforms_val = augmentations_class.from_config(
+        config.augmentations_val[config.augmentations_class]
+    )
 
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
@@ -315,7 +369,13 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
         pin_memory=True,
     )
 
-    val_set = Melanoma(val_df, config, transforms=transforms_val, transform_norm=True, meta_features=None)
+    val_set = Melanoma(
+        val_df,
+        config,
+        transforms=transforms_val,
+        transform_norm=True,
+        meta_features=None,
+    )
     val_loader = DataLoader(
         val_set,
         batch_size=config.batch_size,
@@ -329,7 +389,9 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
     curr_fold_best_checkpoint = hongnan_classifier.fit(train_loader, val_loader, fold)
 
-    val_df[[str(c) for c in range(config.num_classes)]] = curr_fold_best_checkpoint["oof_preds"]
+    val_df[[str(c) for c in range(config.num_classes)]] = curr_fold_best_checkpoint[
+        "oof_preds"
+    ]
     # val_df["preds"] = curr_fold_best_checkpoint["oof_preds"].argmax(1)
 
     return val_df
@@ -339,7 +401,9 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 ### then it will be good to call get_oof_roc in the train_loop instead of hard coding it.
 
 
-def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_fold=False):
+def train_loop(
+    df_folds: pd.DataFrame, config, fold_num: int = None, train_one_fold=False
+):
     """Perform the training loop on all folds. Here The CV score is the average of the validation fold metric.
     While the OOF score is the aggregation of all validation folds."""
 
@@ -354,9 +418,15 @@ def train_loop(df_folds: pd.DataFrame, config, fold_num: int = None, train_one_f
         for fold in (number + 1 for number in range(config.num_folds)):
             _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold)
             oof_df = pd.concat([oof_df, _oof_df])
-            curr_fold_best_score_dict, curr_fold_best_score = get_oof_roc(config, _oof_df)
+            curr_fold_best_score_dict, curr_fold_best_score = get_oof_roc(
+                config, _oof_df
+            )
             cv_score_list.append(curr_fold_best_score)
-            print("\n\n\nOOF Score for Fold {}: {}\n\n\n".format(fold, curr_fold_best_score))
+            print(
+                "\n\n\nOOF Score for Fold {}: {}\n\n\n".format(
+                    fold, curr_fold_best_score
+                )
+            )
 
         print("CV score", np.mean(cv_score_list))
         print("Variance", np.var(cv_score_list))
@@ -369,4 +439,6 @@ if __name__ == "__main__":
     seed_all(seed=yaml_config.seed)
     train_csv = pd.read_csv(yaml_config.paths["csv_path"])
     folds = make_folds(train_csv, yaml_config)
-    train_all_folds = train_loop(df_folds=folds, config=yaml_config, fold_num=None, train_one_fold=False)
+    train_all_folds = train_loop(
+        df_folds=folds, config=yaml_config, fold_num=None, train_one_fold=False
+    )
