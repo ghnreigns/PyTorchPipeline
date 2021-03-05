@@ -492,6 +492,7 @@ def train_loop(
 
 
 if __name__ == "__main__":
+    colab = True
     if colab is True:
         yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
     else:
