@@ -41,6 +41,7 @@ class Trainer:
         self.monitored_metrics_history = []
         self.save_path = config.paths["save_path"]
         if not os.path.exists(self.save_path):
+            print("new save folder created")
             os.makedirs(self.save_path)
 
         # Uncomment this if needed to use different val loss #
@@ -494,7 +495,8 @@ def train_loop(
 if __name__ == "__main__":
     colab = True
     if colab is True:
-        yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
+        # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
+        yaml_config = YAMLConfig("/content/p/config.py")
         yaml_config.paths[
             "log_path"
         ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt"
