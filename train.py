@@ -497,7 +497,7 @@ if __name__ == "__main__":
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
-        yaml_config = YAMLConfig("/content/reighns/config.py")
+        yaml_config = YAMLConfig("/content/reighns/config.yaml")
         yaml_config.paths[
             "log_path"
         ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt"
