@@ -492,7 +492,10 @@ def train_loop(
 
 
 if __name__ == "__main__":
-    yaml_config = YAMLConfig("./config.yaml")
+    if colab is True:
+        yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
+    else:
+        yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
     train_csv = pd.read_csv(yaml_config.paths["csv_path"])
 
