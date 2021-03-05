@@ -495,13 +495,19 @@ if __name__ == "__main__":
     colab = True
     if colab is True:
         yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
-        yaml_config.log_path = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt"
-        yaml_config.train_path = "/content/train/"
-        yaml_config.csv_path = "/content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv"
-        yaml_config.save_path: "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
-        yaml_config.model_weight_path_folder = (
-            "/content/drive/My Drive/pretrained-effnet-weights"
-        )
+        yaml_config.paths[
+            "log_path"
+        ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt"
+        yaml_config.paths["train_path"] = "/content/train/"
+        yaml_config.paths[
+            "csv_path"
+        ] = "/content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv"
+        yaml_config.paths[
+            "save_path"
+        ]: "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
+        yaml_config.paths[
+            "model_weight_path_folder"
+        ] = "/content/drive/My Drive/pretrained-effnet-weights"
     else:
         yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
