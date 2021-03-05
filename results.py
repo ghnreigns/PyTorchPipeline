@@ -614,7 +614,8 @@ class Results(abc.ABC):
             summary_computed[result.__class__.__name__] = result.compute(
                 **summary_computed
             )
-
+        # print("self.results", self.results)
+        # -> [<results.average_loss object at 0x0000020AE5287880>, <results.average_accuracy object at 0x0000020AE5287970>, <results.val_preds_softmax_array object at 0x0000020AE52879D0>, <results.val_roc_auc_score object at 0x0000020AE5287A30>, <results.multi_class_roc_auc_score object at 0x0000020AE5287A60>]
         return {
             result.__class__.__name__: summary_computed[result.__class__.__name__]
             for result in self.results

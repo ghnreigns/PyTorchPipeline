@@ -68,6 +68,7 @@ criterion_params:
     xent: 0.1
 use_amp: False
 debug: True
+cv_schema: StratifiedKFold
 result_params:
   average_accuracy: {}
   average_loss: {}

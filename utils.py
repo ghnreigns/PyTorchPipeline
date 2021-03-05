@@ -12,6 +12,7 @@ import torch
 from tqdm import tqdm
 
 
+## set and get attribute dynamically
 def rsetattr(obj, attr, val):
     pre, _, post = attr.rpartition(".")
     return setattr(rgetattr(obj, pre) if pre else obj, post, val)

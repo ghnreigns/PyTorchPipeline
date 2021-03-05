@@ -1,6 +1,16 @@
 import numpy as np
 import sklearn
 
+"""
+multiclass_roc is macro_multilabel_auc
+def macro_multilabel_auc(label, pred):
+    aucs = []
+    for i in range(len(target_cols)):
+        aucs.append(roc_auc_score(label[:, i], pred[:, i]))
+    print(np.round(aucs, 4))
+    return np.mean(aucs)
+"""
+
 
 def multiclass_roc(y_true, y_preds_softmax_array, config):
     label_dict, fpr, tpr, roc_auc, roc_scores = dict(), dict(), dict(), dict(), []

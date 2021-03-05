@@ -66,21 +66,31 @@ class Trainer:
             results.construct_result(result, self.config)
             for result in self.config.results_val
         ]
-        # print(self.selected_results_val) -> [<results.average_loss object at 0x0000020CF63C67F0>, <results.average_accuracy object at 0x0000020CF63C68E0>, <results.val_preds_softmax_array object at 0x0000020CF63C6940>, <results.val_roc_auc_score object at 0x0000020CF63C69A0>, <results.multi_class_roc_auc_score object at 0x0000020CF63C69D0>]
+        # print(self.selected_results_val)
+        # -> [<results.average_loss object at 0x0000020CF63C67F0>, <results.average_accuracy object at 0x0000020CF63C68E0>,
+        #  <results.val_preds_softmax_array object at 0x0000020CF63C6940>, <results.val_roc_auc_score object at 0x0000020CF63C69A0>,
+        #  <results.multi_class_roc_auc_score object at 0x0000020CF63C69D0>]
 
         self.validation_results = results.ValidationResults(
             self, self.selected_results_val, self.config
         )
+        # print(self.validation_results)
+        # -> <results.ValidationResults object at 0x000001BCFA265850>
 
         self.selected_results_train = [
             results.construct_result(result, self.config)
             for result in self.config.results_train
         ]
+        # print(self.selected_results_train)
+        # -> [<results.average_loss object at 0x000001BCFA265880>, <results.average_accuracy object at 0x000001BCFA265970>,
+        #  <results.val_preds_softmax_array object at 0x000001BCFA2659D0>, <results.val_roc_auc_score object at 0x000001BCFA265A30>,
+        #  <results.multi_class_roc_auc_score object at 0x000001BCFA265A60>]
 
         self.training_results = results.TrainingResults(
             self, self.selected_results_train, self.config
         )
-
+        # print(self.training_results)
+        # -> <results.TrainingResults
         # The current-known best values for selected ComparableResult
         # validation results
         self.best_val_results = {}
@@ -131,7 +141,8 @@ class Trainer:
                 for result in self.selected_results_train
                 if isinstance(result, results.ReportableResult)
             ]
-
+            # print(train_reported_results)
+            # -> ['Avg Validation Summary Loss: 0.527126', 'Validation Accuracy: 0.791667']
             train_result_str = " | ".join(
                 [
                     "Training Epoch: {}".format(self.epoch + 1),
@@ -140,18 +151,43 @@ class Trainer:
                 ]
             )
 
-            self.log("[RESULT]: {}".format(train_result_str))
+            self.log("[TRAIN RESULT]: {}".format(train_result_str))
 
             val_start_time = time.time()
+            """
+            It suffices to understand self.valid_one_epoch(val_loader)
+            So val_results_computed returns the following:
+            
+            """
             val_results_computed = self.valid_one_epoch(val_loader)
+            # print(val_results_computed)
+            # -> {'average_loss': tensor(0.1868, device='cuda:0'),
+            #     'average_accuracy': 0.95,
+            #     'val_preds_softmax_array': array([[0.985, 0.014],[0.977, 0.0229]], dtype=float32),
+            #     'val_roc_auc_score': 0.521,
+            #     'multi_class_roc_auc_score': 0.521}
+
             val_end_time = time.time()
             val_elapsed_time = time.strftime(
                 "%H:%M:%S", time.gmtime(val_end_time - val_start_time)
             )
+            ## Important addition for plotting
+            self.loss_history.append(val_results_computed["average_loss"])
+            self.monitored_metrics_history.append(
+                val_results_computed[self.config.monitored_result]
+            )
+            ## end
 
             # Save the current value of all savable validation results
+            # This for loop must be after valid one epoch for apparent reason you need the results computed.
             for result in self.selected_results_val:
-                # Here signifies that val_preds_softmax_array is not savable
+                # print(result, isinstance(result, results.SavableResult))
+                # <results.average_loss object at 0x000001B174223880> False
+                # <results.average_accuracy object at 0x000001B174223970> False
+                # <results.val_preds_softmax_array object at 0x000001B1742239D0> True
+                # <results.val_roc_auc_score object at 0x000001B174223A30> False
+                # <results.multi_class_roc_auc_score object at 0x000001B174223A60> False
+
                 if not isinstance(result, results.SavableResult):
                     continue
 
@@ -159,6 +195,7 @@ class Trainer:
                 savable_name = result.get_save_name(
                     val_results_computed[result.__class__.__name__]
                 )
+                # print(savable_name) -> "oof_preds" refer to results.py val_preds_softmax_array class, this signifies we want to save this.
 
                 # If savable_name is reported as None, we don't save the
                 # result value.
@@ -168,6 +205,12 @@ class Trainer:
                 self.saved_val_results[savable_name] = val_results_computed[
                     result.__class__.__name__
                 ]
+                # print(self.saved_val_results) here get the savable name oof_preds, and then get the class name to be val_preds_softmax_array
+                # ->
+                # {'oof_preds': array([[0.8899242 , 0.11007578],
+                #                      [0.72081256, 0.27918747],
+                #                      [0.68776596, 0.31223404],
+                #                      [0.7657404 , 0.23425962]}
 
             val_reported_results = [
                 result.report(val_results_computed[result.__class__.__name__])
@@ -183,7 +226,7 @@ class Trainer:
                 ]
             )
 
-            self.log("[RESULT]: {}".format(val_result_str))
+            self.log("[VAL RESULT]: {}".format(val_result_str))
 
             if self.early_stopping is not None:
                 best_score, early_stop = self.early_stopping.should_stop(
@@ -302,7 +345,7 @@ class Trainer:
         """Validate one training epoch."""
         # set to eval mode
         self.model.eval()
-
+        # it is returning the method in Results class which takes in a loader
         return self.validation_results.compute_results(val_loader)
 
     def save_model(self, path):
@@ -320,7 +363,7 @@ class Trainer:
             for (best_result, value) in self.best_val_results.items()
         }
 
-        print(best_results)
+        # print(best_results)
 
         torch.save(
             {
@@ -330,6 +373,8 @@ class Trainer:
                 "epoch": self.epoch,
                 **best_results,
                 **self.saved_val_results,
+                "loss_history": self.loss_history,
+                self.config.monitored_result: self.monitored_metrics_history,
             },
             path,
         )
@@ -453,7 +498,7 @@ if __name__ == "__main__":
 
     df_folds = make_folds(train_csv, yaml_config)
     if yaml_config.debug:
-        df_folds = df_folds.sample(frac=0.01)
+        df_folds = df_folds.sample(frac=0.001)
 
     train_all_folds = train_loop(
         df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
