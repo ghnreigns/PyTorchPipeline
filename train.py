@@ -512,6 +512,7 @@ if __name__ == "__main__":
             "model_weight_path_folder"
         ] = "/content/drive/My Drive/pretrained-effnet-weights"
         yaml_config.num_workers = 4
+        yaml_config.batch_size = 32
     else:
         yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
