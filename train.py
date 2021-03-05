@@ -507,7 +507,7 @@ if __name__ == "__main__":
         ] = "/content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv"
         yaml_config.paths[
             "save_path"
-        ]: "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
+        ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
         yaml_config.paths[
             "model_weight_path_folder"
         ] = "/content/drive/My Drive/pretrained-effnet-weights"
