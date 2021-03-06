@@ -167,7 +167,7 @@ class Trainer:
             #     'val_preds_softmax_array': array([[0.985, 0.014],[0.977, 0.0229]], dtype=float32),
             #     'val_roc_auc_score': 0.521,
             #     'multi_class_roc_auc_score': 0.521}
-
+            # print(val_results_computed["val_preds_softmax_array"].shape)
             val_end_time = time.time()
             val_elapsed_time = time.strftime(
                 "%H:%M:%S", time.gmtime(val_end_time - val_start_time)
@@ -206,6 +206,7 @@ class Trainer:
                 self.saved_val_results[savable_name] = val_results_computed[
                     result.__class__.__name__
                 ]
+                # print(len(self.saved_val_results))
                 # print(self.saved_val_results) here get the savable name oof_preds, and then get the class name to be val_preds_softmax_array
                 # ->
                 # {'oof_preds': array([[0.8899242 , 0.11007578],
@@ -346,6 +347,7 @@ class Trainer:
         """Validate one training epoch."""
         # set to eval mode
         self.model.eval()
+        # print("len", len(val_loader))
         # it is returning the method in Results class which takes in a loader
         return self.validation_results.compute_results(val_loader)
 
@@ -409,6 +411,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
+    # print(len(val_df))
     data_dict = {
         "dataset_train_dict": {
             "df": train_df,
@@ -418,7 +421,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
             "mode": "train",
         },
         "dataset_val_dict": {
-            "df": train_df,
+            "df": val_df,
             "transforms": transforms_val,
             "transform_norm": True,
             "meta_features": None,
@@ -446,7 +449,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     hongnan_classifier = Trainer(model=model, config=config)
 
     curr_fold_best_checkpoint = hongnan_classifier.fit(train_loader, val_loader, fold)
-
+    # print(len(curr_fold_best_checkpoint["oof_preds"]))
     val_df[[str(c) for c in range(config.num_classes)]] = curr_fold_best_checkpoint[
         "oof_preds"
     ]
@@ -493,7 +496,7 @@ def train_loop(
 
 
 if __name__ == "__main__":
-    colab = True
+    colab = False
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
@@ -513,6 +516,7 @@ if __name__ == "__main__":
         ] = "/content/drive/My Drive/pretrained-effnet-weights"
         yaml_config.num_workers = 4
         yaml_config.batch_size = 32
+        yaml_config.debug = False
     else:
         yaml_config = YAMLConfig("./config.yaml")
     seed_all(seed=yaml_config.seed)
@@ -520,8 +524,12 @@ if __name__ == "__main__":
 
     df_folds = make_folds(train_csv, yaml_config)
     if yaml_config.debug:
-        df_folds = df_folds.sample(frac=0.001)
+        df_folds = df_folds.sample(frac=0.002)
+        print(df_folds.groupby(["fold", yaml_config.class_col_name]).size())
+        # print(len(df_folds))
 
-    train_all_folds = train_loop(
-        df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
-    )
+        train_all_folds = train_loop(
+            df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+        )
+    else:
+        train_all_folds = train_loop(df_folds=df_folds, config=yaml_config)

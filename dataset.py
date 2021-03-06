@@ -170,7 +170,7 @@ class CustomDataLoader:
         )
 
         val_loader = torch.utils.data.DataLoader(
-            self.train_dataset, **self.data_dict["dataloader_val_dict"]
+            self.valid_dataset, **self.data_dict["dataloader_val_dict"]
         )
 
         dataloader_dict = {"Train": train_loader, "Validation": val_loader}
