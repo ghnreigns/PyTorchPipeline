@@ -47,7 +47,7 @@ class CustomModel(torch.nn.Module):
         )
 
         self.model = _model_factory(
-            # model_weight_path_folder=config.paths["model_weight_path_folder"],
+            model_weight_path_folder=config.paths["model_weight_path_folder"],
             model_name=config.model_name,
             pretrained=self.pretrained,
         )
