@@ -14,7 +14,7 @@ class_list:
   - 9
   - 10
 batch_size: 16
-n_epochs: 8
+n_epochs: 10
 scheduler: ReduceLROnPlateau
 scheduler_params:
   StepLR:
@@ -90,7 +90,7 @@ results_val:
   - val_preds_softmax_array
   - multi_class_roc_auc_score
 monitored_result: multi_class_roc_auc_score
-image_size: 256
+image_size: 512
 verbose: 1
 verbose_step: 1
 num_folds: 5
@@ -146,8 +146,8 @@ augmentations_train:
         p: 0.85
     - name: Resize
       params:
-        height: 256
-        width: 256
+        height: 512
+        width: 512
         p: 1.0
     - name: Normalize
       params:
@@ -159,8 +159,8 @@ augmentations_val:
   AlbumentationsAugmentation:
     - name: Resize
       params:
-        height: 256
-        width: 256
+        height: 512
+        width: 512
         p: 1.0
     - name: Normalize
       params:
