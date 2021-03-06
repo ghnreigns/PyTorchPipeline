@@ -116,7 +116,7 @@ paths:
 model_factory: timm
 model_name: resnet200d
 device: auto
-augmentations_class: Albumentations
+augmentations_class: AlbumentationsAugmentation
 augmentations_train:
   AlbumentationsAugmentation:
     - name: VerticalFlip
