@@ -7,7 +7,8 @@ import torch
 import torchtoolbox.transform
 import torchvision
 from albumentations.pytorch.transforms import ToTensorV2
-from discolight.disco import disco
+
+# from discolight.disco import disco
 
 from autoaugment.auto_augment import AutoAugment
 
@@ -48,7 +49,9 @@ class Augmentation(ABC):
         return a new class instance.
         """
         augmentation_objs = [
-            getattr(klass.augmentations_store, augmentation["name"])(**augmentation.get("params", {}))
+            getattr(klass.augmentations_store, augmentation["name"])(
+                **augmentation.get("params", {})
+            )
             for augmentation in augmentations
         ]
 
@@ -78,22 +81,22 @@ class AlbumentationsAugmentation(Augmentation):
         return transform["image"]
 
 
-class DiscolightAugmentation(Augmentation):
+# class DiscolightAugmentation(Augmentation):
 
-    augmentations_store = disco
+#     augmentations_store = disco
 
-    @staticmethod
-    def compose_constructor(augmentations):
-        return disco.Sequence(augmentations=augmentations)
+#     @staticmethod
+#     def compose_constructor(augmentations):
+#         return disco.Sequence(augmentations=augmentations)
 
-    def __init__(self, seq):
-        self.seq = seq
+#     def __init__(self, seq):
+#         self.seq = seq
 
-    def augment(self, image):
-        aug_image = self.seq.get_img(image)
+#     def augment(self, image):
+#         aug_image = self.seq.get_img(image)
 
-        tensor = torch.as_tensor(data=aug_image, dtype=torch.float32, device=None).permute(2, 0, 1)
-        return tensor
+#         tensor = torch.as_tensor(data=aug_image, dtype=torch.float32, device=None).permute(2, 0, 1)
+#         return tensor
 
 
 class TorchTransforms(Augmentation):
