@@ -327,11 +327,11 @@ class softmax_preds(PerStepResult):
     def step(self, logits, mode, **kwargs):
 
         if mode == Mode.VALIDATION:
-            # return logits.sigmoid().to("cpu").numpy()
-            return torch.nn.Softmax(dim=1)(input=logits).to("cpu").numpy()
+            return logits.sigmoid().to("cpu").numpy()
+            # return torch.nn.Softmax(dim=1)(input=logits).to("cpu").numpy()
         else:
-            # return logits.sigmoid().to("cpu").detach().numpy()
-            return torch.nn.Softmax(dim=1)(input=logits).to("cpu").detach().numpy()
+            return logits.sigmoid().to("cpu").detach().numpy()
+            # return torch.nn.Softmax(dim=1)(input=logits).to("cpu").detach().numpy()
 
     def reset(self):
         pass
