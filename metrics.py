@@ -13,6 +13,8 @@ def macro_multilabel_auc(label, pred):
 
 
 def multiclass_roc(y_true, y_preds_softmax_array, config):
+    print("y_true", y_true)
+    print("y_preds", y_preds_softmax_array)
     label_dict, fpr, tpr, roc_auc, roc_scores = dict(), dict(), dict(), dict(), []
     for label_num in range(len(config.class_list)):
         """

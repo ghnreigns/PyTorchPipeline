@@ -103,11 +103,15 @@ class Trainer:
         )
 
         self.log(
-            "Trainer prepared. We are using {} device with {} worker(s).\nThe monitored metric is {}".format(
+            "[Trainer prepared]: We are using {} device with {} worker(s).\nThe monitored metric is {}\n".format(
                 self.config.device,
                 self.config.num_workers,
                 self.config.monitored_result,
             )
+        )
+
+        self.log(
+            "We are dealing with a Multiclass/label problem, using softmax/sigmoid, etc"
         )
 
     def fit(self, train_loader, val_loader, fold: int):
