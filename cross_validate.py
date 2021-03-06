@@ -38,6 +38,13 @@ def make_folds(train_csv: pd.DataFrame, config) -> pd.DataFrame:
         except:
             display(df_folds)
 
+    else:  # No CV Schema used in this file, but custom one
+        df_folds = train_csv.copy()
+        try:
+            print(df_folds.groupby(["fold", config.class_col_name]).size())
+        except:
+            display(df_folds)
+
     return df_folds
 
 
