@@ -94,9 +94,10 @@ class CustomDataset(torch.utils.data.Dataset):
 
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        print(image.shape)
         # return transpose if image is not square
         image = np.transpose(image, (2, 0, 1)).astype(np.float32)
+        print(image.shape)
 
         if not self.transform_norm:
             image = image.astype(np.float32) / 255.0
