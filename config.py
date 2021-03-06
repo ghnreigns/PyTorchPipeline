@@ -10,6 +10,8 @@ import results
 
 """ It is worthwhile to nest the config parameters even more, like a nested dict as follows:
 training_hyperparams: {scheduler_params:{}, opt_params:{},... batch_size:{}......}
+
+Also note that any(...,...) gives more than one option 
 """
 
 
@@ -45,7 +47,7 @@ verbose: int()
 verbose_step: int()
 num_folds: int()
 image_col_name: str()
-class_col_name: str()
+class_col_name: any(str(), list(str()))
 group_kfold_split: str()
 paths:
   log_path: str()
