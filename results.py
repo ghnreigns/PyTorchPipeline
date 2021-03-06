@@ -434,7 +434,9 @@ class Results(abc.ABC):
 
         self.config = config
 
-        self.trainer.log("Solving {} results computation order...".format(results_type))
+        self.trainer.log(
+            "Solving {} results computation order...\n".format(results_type)
+        )
 
         def compute_computation_order(classes, func_from_class, built_in_dependencies):
             """Determine the computation order of results for a phase.
@@ -530,21 +532,21 @@ class Results(abc.ABC):
         )
 
         self.trainer.log(
-            "Per-Step Results: {}".format(
+            "[Per-Step Results]: {}\n".format(
                 ", ".join(
                     [metric.__class__.__name__ for metric in self.per_step_results]
                 )
             )
         )
         self.trainer.log(
-            "Summary Results: {}".format(
+            "[Summary Results]: {}\n".format(
                 ", ".join(
                     [metric.__class__.__name__ for metric in self.summary_results]
                 )
             )
         )
         self.trainer.log(
-            "Selected Results: {}".format(
+            "[Selected Results]: {}\n".format(
                 ", ".join([metric.__class__.__name__ for metric in self.results])
             )
         )
