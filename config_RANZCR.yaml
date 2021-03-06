@@ -78,6 +78,7 @@ criterion_params:
 use_amp: True
 debug: True
 cv_schema: RepeatedStratifiedGroupKFold
+classification_type: MultiLabel
 result_params:
   average_loss: {}
   multi_class_roc_auc_score: {}
