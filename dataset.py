@@ -94,10 +94,6 @@ class CustomDataset(torch.utils.data.Dataset):
 
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        print(image.shape)
-        # return transpose if image is not square
-        image = np.transpose(image, (2, 0, 1)).astype(np.float32)
-        print(image.shape)
 
         if not self.transform_norm:
             image = image.astype(np.float32) / 255.0
@@ -116,6 +112,10 @@ class CustomDataset(torch.utils.data.Dataset):
         # Note this is important if you use BCE loss. Must make labels to float for some reason
         if self.config.criterion_train == "BCEWithLogitsLoss":
             label = torch.as_tensor(data=label, dtype=torch.float32, device=None)
+
+        ### We using PyTorch so channels first "Raise Channels Last Error"
+        if image.shape[0] != 3 and image.shape[0] != 1:
+            image = np.transpose(image, (2, 0, 1)).astype(np.float32)
 
         return image_id, image, label
 
