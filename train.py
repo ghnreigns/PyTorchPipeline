@@ -528,7 +528,7 @@ if __name__ == "__main__":
     df_folds = make_folds(train_csv, yaml_config)
     if yaml_config.debug:
         df_folds = df_folds.sample(frac=0.002)
-        print(df_folds.groupby(["fold", yaml_config.class_col_name]).size())
+        # print(df_folds.groupby(["fold", yaml_config.class_col_name]).size())
         # print(len(df_folds))
 
         train_all_folds = train_loop(
