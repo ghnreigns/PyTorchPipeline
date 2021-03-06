@@ -513,7 +513,7 @@ if __name__ == "__main__":
         ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
         yaml_config.paths[
             "model_weight_path_folder"
-        ] = "/content/drive/My Drive/pretrained-effnet-weights"
+        ] = "/content/drive/My Drive/pretrained-weights/pretrained-effnet-weights"
         yaml_config.num_workers = 4
         yaml_config.batch_size = 32
         yaml_config.debug = False
