@@ -496,7 +496,7 @@ def train_loop(
 
 
 if __name__ == "__main__":
-    colab = False
+    colab = True
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
