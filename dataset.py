@@ -43,15 +43,15 @@ class CustomDataset(torch.utils.data.Dataset):
             image_folder_path=config.paths["train_path"], allowed_extensions=None
         )
 
-        self.df_has_ext = check_df_ext(df=self.df, col_name=config.image_col_name)
-        """
-        This part here says that if the df has extension for all the image name, like each cell has
-        image.jpg behind, then we set self.image_extension to empty string so that os.path.join in
-        getitem won't throw error.
-        """
+        # self.df_has_ext = check_df_ext(df=self.df, col_name=config.image_col_name)
+        # """
+        # This part here says that if the df has extension for all the image name, like each cell has
+        # image.jpg behind, then we set self.image_extension to empty string so that os.path.join in
+        # getitem won't throw error.
+        # """
 
-        if self.df_has_ext is True:
-            self.image_extension = ""
+        # if self.df_has_ext is True:
+        #     self.image_extension = ""
 
     def __len__(self):
         """Get the dataset length."""
