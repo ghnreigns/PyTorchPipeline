@@ -94,8 +94,9 @@ class CustomDataset(torch.utils.data.Dataset):
 
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
         # return transpose if image is not square
-        # image = np.transpose(image, (2, 0, 1)).astype(np.float32)
+        image = np.transpose(image, (2, 0, 1)).astype(np.float32)
 
         if not self.transform_norm:
             image = image.astype(np.float32) / 255.0
@@ -110,6 +111,10 @@ class CustomDataset(torch.utils.data.Dataset):
                 self.df.iloc[idx][self.meta_features].values, dtype=np.float32
             )
             return image_id, (image, meta), label
+
+        # Note this is important if you use BCE loss. Must make labels to float for some reason
+        if self.config.criterion_train == "BCEWithLogitsLoss":
+            label = torch.as_tensor(data=label, dtype=torch.float32, device=None)
 
         return image_id, image, label
 

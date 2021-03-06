@@ -496,7 +496,7 @@ def train_loop(
 
 
 if __name__ == "__main__":
-    colab = True
+    colab = False
     COMPETITIONS = ["MELANOMA", "CASSAVA", "RANZCR"]
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
