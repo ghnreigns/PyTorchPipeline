@@ -76,7 +76,7 @@ criterion_params:
     gamma: 2
     xent: 0.1
 use_amp: True
-debug: True
+debug: False
 cv_schema: RepeatedStratifiedGroupKFold
 classification_type: MultiLabel
 result_params:
@@ -120,9 +120,6 @@ device: auto
 augmentations_class: AlbumentationsAugmentation
 augmentations_train:
   AlbumentationsAugmentation:
-    - name: VerticalFlip
-      params:
-        p: 0.5
     - name: HorizontalFlip
       params:
         p: 0.5
