@@ -542,4 +542,6 @@ if __name__ == "__main__":
             df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
         )
     else:
-        train_all_folds = train_loop(df_folds=df_folds, config=yaml_config)
+        train_all_folds = train_loop(
+            df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+        )  # train_loop(df_folds=df_folds, config=yaml_config)
