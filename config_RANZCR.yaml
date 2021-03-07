@@ -1,4 +1,4 @@
-seed: 42
+seed: 1930
 num_workers: auto # 0 when using from Windows 
 num_classes: 11
 class_list:
@@ -13,9 +13,10 @@ class_list:
   - 8
   - 9
   - 10
-batch_size: 16
-n_epochs: 10
-scheduler: ReduceLROnPlateau
+train_batch_size: 16
+val_batch_size: 32
+n_epochs: 16
+scheduler: CosineAnnealingWarmRestarts
 scheduler_params:
   StepLR:
     step_size: 2
@@ -33,7 +34,7 @@ scheduler_params:
     eps: 1.e-8
     verbose: True
   CosineAnnealingWarmRestarts:
-    T_0: 10
+    T_0: 16
     T_mult: 1
     eta_min: 0
     last_epoch: -1
@@ -43,7 +44,7 @@ val_step_scheduler: True
 optimizer: AdamW
 optimizer_params:
   AdamW:
-    lr: 1.e-3
+    lr: 2.5e-04
     betas:
       - 0.9
       - 0.999
@@ -90,7 +91,7 @@ results_val:
   - val_preds_softmax_array
   - multi_class_roc_auc_score
 monitored_result: multi_class_roc_auc_score
-image_size: 512
+image_size: 640
 verbose: 1
 verbose_step: 1
 num_folds: 5
@@ -109,10 +110,10 @@ class_col_name:
   - Swan Ganz Catheter Present
 group_kfold_split: PatientID
 paths:
-  log_path: /content/drive/My Drive/RANZCR/weights/resnet_200D/6th-Mar-V1/log.txt
+  log_path: /content/drive/My Drive/RANZCR/weights/resnet_200D/7th-Mar-V1/log.txt
   train_path: /content/train/train
   csv_path: /content/df_folds.csv
-  save_path: /content/drive/My Drive/RANZCR/weights/resnet_200D/6th-Mar-V1
+  save_path: /content/drive/My Drive/RANZCR/weights/resnet_200D/7th-Mar-V1
   model_weight_path_folder: /content/drive/My Drive/pretrained-weights/pretrained-resnet200D-weights
 model_factory: timm
 model_name: resnet200d
@@ -123,34 +124,31 @@ augmentations_train:
     - name: HorizontalFlip
       params:
         p: 0.5
-    - name: RandomBrightness
-      params:
-        limit: 0.2
-        p: 0.75
-    - name: RandomContrast
-      params:
-        limit: 0.2
-        p: 0.75
-    - name: HueSaturationValue
-      params:
-        hue_shift_limit: 10
-        sat_shift_limit: 10
-        val_shift_limit: 10
-        p: 0.5
     - name: ShiftScaleRotate
       params:
-        shift_limit: 0.1
-        scale_limit: 0.1
-        rotate_limit: 15
+        shift_limit: 0.2
+        scale_limit: 0.2
+        rotate_limit: 20
         border_mode: 0
-        p: 0.85
-    - name: Resize
+        value: 0
+        mask_value: 0
+        p: 0.5
+    - name: RandomResizedCrop
       params:
-        height: 512
-        width: 512
-        p: 1.0
+        height: 640
+        width: 640
+        scale: [0.9, 1.0]
+        p: 0.5
+    - name: Cutout
+      params: 
+        max_h_size: 51
+        max_w_size: 51
+        num_holes: 5
+        p: 0.5
     - name: Normalize
       params:
+        mean: [0.4887381077884414]
+        std: [0.23064819430546407]
         p: 1.0
     - name: ToTensorV2
       params:
@@ -159,11 +157,13 @@ augmentations_val:
   AlbumentationsAugmentation:
     - name: Resize
       params:
-        height: 512
-        width: 512
+        height: 640
+        width: 640
         p: 1.0
     - name: Normalize
       params:
+        mean: [0.4887381077884414]
+        std: [0.23064819430546407]
         p: 1.0
     - name: ToTensorV2
       params:

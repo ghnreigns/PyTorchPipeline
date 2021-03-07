@@ -433,14 +433,14 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
             "mode": "train",
         },
         "dataloader_train_dict": {
-            "batch_size": config.batch_size,
+            "batch_size": config.train_batch_size,
             "shuffle": True,
             "num_workers": config.num_workers,
             "worker_init_fn": seed_worker,
             "pin_memory": True,
         },
         "dataloader_val_dict": {
-            "batch_size": config.batch_size,
+            "batch_size": config.val_batch_size,
             "shuffle": False,
             "num_workers": config.num_workers,
             "worker_init_fn": seed_worker,
@@ -533,7 +533,8 @@ if __name__ == "__main__":
     df_folds = make_folds(train_csv, yaml_config)
     if yaml_config.debug:
         df_folds = df_folds.sample(frac=0.05)
-        yaml_config.batch_size = 4
+        yaml_config.train_batch_size = 4
+        yaml_config.val_batch_size = 4
         # print(df_folds.groupby(["fold", yaml_config.class_col_name]).size())
         # print(len(df_folds))
 
