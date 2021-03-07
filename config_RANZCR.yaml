@@ -91,7 +91,7 @@ results_val:
   - val_preds_softmax_array
   - multi_class_roc_auc_score
 monitored_result: multi_class_roc_auc_score
-image_size: 640
+image_size: 512
 verbose: 1
 verbose_step: 1
 num_folds: 5
@@ -135,8 +135,8 @@ augmentations_train:
         p: 0.5
     - name: RandomResizedCrop
       params:
-        height: 640
-        width: 640
+        height: 512
+        width: 512
         scale: [0.9, 1.0]
         p: 1.0
     - name: Cutout
@@ -157,8 +157,8 @@ augmentations_val:
   AlbumentationsAugmentation:
     - name: Resize
       params:
-        height: 640
-        width: 640
+        height: 512
+        width: 512
         p: 1.0
     - name: Normalize
       params:
