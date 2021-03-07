@@ -138,7 +138,7 @@ augmentations_train:
         height: 640
         width: 640
         scale: [0.9, 1.0]
-        p: 0.5
+        p: 1.0
     - name: Cutout
       params: 
         max_h_size: 51
