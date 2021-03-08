@@ -35,7 +35,9 @@ def load_state_dict(checkpoint_path, use_ema=False):
             state_dict = new_state_dict
         else:
             state_dict = checkpoint
-        _logger.info("Loaded {} from checkpoint '{}'".format(state_dict_key, checkpoint_path))
+        _logger.info(
+            "Loaded {} from checkpoint '{}'".format(state_dict_key, checkpoint_path)
+        )
         return state_dict
     else:
         _logger.error("No checkpoint found at '{}'".format(checkpoint_path))
@@ -47,7 +49,9 @@ def load_checkpoint(model, checkpoint_path, use_ema=False, strict=True):
     model.load_state_dict(state_dict, strict=strict)
 
 
-def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, log_info=True):
+def resume_checkpoint(
+    model, checkpoint_path, optimizer=None, loss_scaler=None, log_info=True
+):
     resume_epoch = None
     if os.path.isfile(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location="cpu")
@@ -76,7 +80,11 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
                     resume_epoch += 1  # start at the next epoch, old checkpoints incremented before save
 
             if log_info:
-                _logger.info("Loaded checkpoint '{}' (epoch {})".format(checkpoint_path, checkpoint["epoch"]))
+                _logger.info(
+                    "Loaded checkpoint '{}' (epoch {})".format(
+                        checkpoint_path, checkpoint["epoch"]
+                    )
+                )
         else:
             model.load_state_dict(checkpoint)
             if log_info:
@@ -87,21 +95,34 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
         raise FileNotFoundError()
 
 
-def load_pretrained(model, cfg=None, num_classes=1000, in_chans=3, filter_fn=None, strict=True, model_dir=None):
+def load_pretrained(
+    model,
+    cfg=None,
+    num_classes=1000,
+    in_chans=3,
+    filter_fn=None,
+    strict=True,
+    model_dir=None,
+):
     if cfg is None:
         cfg = getattr(model, "default_cfg")
     if cfg is None or "url" not in cfg or not cfg["url"]:
         _logger.warning("Pretrained model URL is invalid, using random initialization.")
         return
 
-    state_dict = model_zoo.load_url(cfg["url"], model_dir=model_dir, progress=True, map_location="cpu")
+    state_dict = model_zoo.load_url(
+        cfg["url"], model_dir=model_dir, progress=True, map_location="cpu"
+    )
 
     if filter_fn is not None:
         state_dict = filter_fn(state_dict)
 
     if in_chans == 1:
         conv1_name = cfg["first_conv"]
-        _logger.info("Converting first conv (%s) pretrained weights from 3 to 1 channel" % conv1_name)
+        _logger.info(
+            "Converting first conv (%s) pretrained weights from 3 to 1 channel"
+            % conv1_name
+        )
         conv1_weight = state_dict[conv1_name + ".weight"]
         # Some weights are in torch.half, ensure it's float for sum on CPU
         conv1_type = conv1_weight.dtype
@@ -123,13 +144,17 @@ def load_pretrained(model, cfg=None, num_classes=1000, in_chans=3, filter_fn=Non
         conv1_weight = conv1_weight.float()
         O, I, J, K = conv1_weight.shape
         if I != 3:
-            _logger.warning("Deleting first conv (%s) from pretrained weights." % conv1_name)
+            _logger.warning(
+                "Deleting first conv (%s) from pretrained weights." % conv1_name
+            )
             del state_dict[conv1_name + ".weight"]
             strict = False
         else:
             # NOTE this strategy should be better than random init, but there could be other combinations of
             # the original RGB input layer weights that'd work better for specific cases.
-            _logger.info("Repeating first conv (%s) weights in channel dim." % conv1_name)
+            _logger.info(
+                "Repeating first conv (%s) weights in channel dim." % conv1_name
+            )
             repeat = int(math.ceil(in_chans / 3))
             conv1_weight = conv1_weight.repeat(1, repeat, 1, 1)[:, :in_chans, :, :]
             conv1_weight *= 3 / float(in_chans)
@@ -244,7 +269,9 @@ def adapt_model_from_string(parent_module, model_string):
             # FIXME extra checks to ensure this is actually the FC classifier layer and not a diff Linear layer?
             num_features = state_dict[n + ".weight"][1]
             new_fc = Linear(
-                in_features=num_features, out_features=old_module.out_features, bias=old_module.bias is not None
+                in_features=num_features,
+                out_features=old_module.out_features,
+                bias=old_module.bias is not None,
             )
             set_layer(new_module, n, new_fc)
             if hasattr(new_module, "num_features"):
@@ -256,7 +283,9 @@ def adapt_model_from_string(parent_module, model_string):
 
 
 def adapt_model_from_file(parent_module, model_variant):
-    adapt_file = os.path.join(os.path.dirname(__file__), "pruned", model_variant + ".txt")
+    adapt_file = os.path.join(
+        os.path.dirname(__file__), "pruned", model_variant + ".txt"
+    )
     with open(adapt_file, "r") as f:
         return adapt_model_from_string(parent_module, f.read().strip())
 
@@ -264,7 +293,11 @@ def adapt_model_from_file(parent_module, model_variant):
 def default_cfg_for_features(default_cfg):
     default_cfg = deepcopy(default_cfg)
     # remove default pretrained cfg fields that don't have much relevance for feature backbone
-    to_remove = ("num_classes", "crop_pct", "classifier")  # add default final pool size?
+    to_remove = (
+        "num_classes",
+        "crop_pct",
+        "classifier",
+    )  # add default final pool size?
     for tr in to_remove:
         default_cfg.pop(tr, None)
     return default_cfg
@@ -292,14 +325,20 @@ def build_model_with_cfg(
         if "out_indices" in kwargs:
             feature_cfg["out_indices"] = kwargs.pop("out_indices")
 
-    model = model_cls(**kwargs) if model_cfg is None else model_cls(cfg=model_cfg, **kwargs)
+    model = (
+        model_cls(**kwargs) if model_cfg is None else model_cls(cfg=model_cfg, **kwargs)
+    )
     model.default_cfg = deepcopy(default_cfg)
 
     if pruned:
         model = adapt_model_from_file(model, variant)
 
     # for classification models, check class attr, then kwargs, then default to 1k, otherwise 0 for feats
-    num_classes_pretrained = 0 if features else getattr(model, "num_classes", kwargs.get("num_classes", 1000))
+    num_classes_pretrained = (
+        0
+        if features
+        else getattr(model, "num_classes", kwargs.get("num_classes", 1000))
+    )
     if pretrained:
 
         load_pretrained(
@@ -322,6 +361,8 @@ def build_model_with_cfg(
                 else:
                     assert False, f"Unknown feature class {feature_cls}"
         model = feature_cls(model, **feature_cfg)
-        model.default_cfg = default_cfg_for_features(default_cfg)  # add back default_cfg
+        model.default_cfg = default_cfg_for_features(
+            default_cfg
+        )  # add back default_cfg
 
     return model
