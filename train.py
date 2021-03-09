@@ -514,7 +514,7 @@ if __name__ == "__main__":
         # if not os.path.exists("/content/reighns"):
         #     print("new save folder created")
         #     os.makedirs("/content/reighns")
-
+        print(COMPETITIONS[comp_name])
         yaml_config = YAMLConfig(COMPETITIONS[comp_name])
 
     else:
