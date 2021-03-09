@@ -309,7 +309,7 @@ class multi_class_roc_auc_score(Result, ReportableResult, ComparableResult):
         pass
 
     def report(self, computed_value):
-        return "MultiClass ROC: {}".format(computed_value)
+        return "MultiClass ROC: {:.6f}".format(computed_value)
 
     def compare(self, old_value, new_value):
         return new_value > old_value

@@ -531,9 +531,9 @@ if __name__ == "__main__":
             yaml_config.train_batch_size = 4
             yaml_config.val_batch_size = 4
             train_all_folds = train_loop(
-                df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+                df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
             )
         else:
             train_all_folds = train_loop(
-                df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+                df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
             )  # UNCOMMENT TO TRAIN ALL FOLDS: train_loop(df_folds=df_folds, config=yaml_config)
