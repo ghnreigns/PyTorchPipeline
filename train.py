@@ -511,9 +511,9 @@ if __name__ == "__main__":
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
-        if not os.path.exists("/content/reighns"):
-            print("new save folder created")
-            os.makedirs("/content/reighns")
+        # if not os.path.exists("/content/reighns"):
+        #     print("new save folder created")
+        #     os.makedirs("/content/reighns")
 
         yaml_config = YAMLConfig(COMPETITIONS[comp_name])
 
