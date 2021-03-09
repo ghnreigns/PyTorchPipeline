@@ -502,46 +502,38 @@ def train_loop(
 
 if __name__ == "__main__":
     colab = True
-    COMPETITIONS = ["MELANOMA", "CASSAVA", "RANZCR"]
+    comp_name = "MELANOMA"
+    COMPETITIONS = {
+        "MELANOMA": "/content/reighns/config_MELANOMA.yaml",
+        "CASSAVA": "",
+        "RANZCR": "/content/reighns/config_RANZCR.yaml",
+    }
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
+        if not os.path.exists("/content/reighns"):
+            print("new save folder created")
+            os.makedirs("/content/reighns")
 
-        yaml_config = YAMLConfig("/content/reighns/config_RANZCR.yaml")
-        # yaml_config.paths[
-        #     "log_path"
-        # ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt"
-        # yaml_config.paths["train_path"] = "/content/train/"
-        # yaml_config.paths[
-        #     "csv_path"
-        # ] = "/content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv"
-        # yaml_config.paths[
-        #     "save_path"
-        # ] = "/content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1"
-        # yaml_config.paths[
-        #     "model_weight_path_folder"
-        # ] = "/content/drive/My Drive/pretrained-weights/pretrained-effnet-weights"
-        # yaml_config.num_workers = 4
-        # yaml_config.batch_size = 32
-        # yaml_config.debug = False
+        yaml_config = YAMLConfig(COMPETITIONS[comp_name])
+
     else:
         yaml_config = YAMLConfig("./config.yaml")
 
-    seed_all(seed=yaml_config.seed)
-    train_csv = pd.read_csv(yaml_config.paths["csv_path"])
+    if comp_name == "MELANOMA":
 
-    df_folds = make_folds(train_csv, yaml_config)
-    if yaml_config.debug:
-        df_folds = df_folds.sample(frac=0.05)
-        yaml_config.train_batch_size = 4
-        yaml_config.val_batch_size = 4
-        # print(df_folds.groupby(["fold", yaml_config.class_col_name]).size())
-        # print(len(df_folds))
+        seed_all(seed=yaml_config.seed)
+        train_csv = pd.read_csv(yaml_config.paths["csv_path"])
 
-        train_all_folds = train_loop(
-            df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
-        )
-    else:
-        train_all_folds = train_loop(
-            df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
-        )  # train_loop(df_folds=df_folds, config=yaml_config)
+        df_folds = make_folds(train_csv, yaml_config)
+        if yaml_config.debug:
+            df_folds = df_folds.sample(frac=0.05)
+            yaml_config.train_batch_size = 4
+            yaml_config.val_batch_size = 4
+            train_all_folds = train_loop(
+                df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+            )
+        else:
+            train_all_folds = train_loop(
+                df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
+            )  # UNCOMMENT TO TRAIN ALL FOLDS: train_loop(df_folds=df_folds, config=yaml_config)

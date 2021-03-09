@@ -1,0 +1,209 @@
+seed: 1930
+num_workers: auto # 0 when using from Windows 
+num_classes: 2
+class_list:
+  - 0
+  - 1
+train_batch_size: 32
+val_batch_size: 64
+n_epochs: 8
+scheduler: StepLR
+scheduler_params:
+  StepLR:
+    step_size: 2
+    gamma: 0.3
+    last_epoch: -1
+    verbose: True
+  ReduceLROnPlateau:
+    mode: max
+    factor: 0.5
+    patience: 1
+    threshold: 0.0001
+    threshold_mode: rel
+    cooldown: 0
+    min_lr: 1.e-5
+    eps: 1.e-8
+    verbose: True
+  CosineAnnealingWarmRestarts:
+    T_0: 10
+    T_mult: 1
+    eta_min: 0
+    last_epoch: -1
+    verbose: True    
+train_step_scheduler: False
+val_step_scheduler: True
+optimizer: AdamW
+optimizer_params:
+  AdamW:
+    lr: 1.e-3
+    betas:
+      - 0.9
+      - 0.999
+    eps: 1.e-8
+    weight_decay: 1.e-3
+    amsgrad: False
+  Adam:
+    lr: 1.e-4
+    betas:
+      - 0.9
+      - 0.999
+    eps: 1.e-8
+    weight_decay: 1.e-6
+    amsgrad: False
+criterion_train: CrossEntropyLoss
+criterion_val: CrossEntropyLoss
+criterion_params:
+  CrossEntropyLoss:
+    weight: null
+    size_average: null
+    ignore_index: -100
+    reduce: null
+    reduction: mean
+  LabelSmoothingLoss:
+    classes: 2
+    smoothing: 0.05
+    dim: -1
+  FocalCosineLoss:
+    alpha: 1
+    gamma: 2
+    xent: 0.1
+use_amp: True
+debug: False
+cv_schema: StratifiedKFold
+result_params:
+  average_loss: {}
+  multi_class_roc_auc_score: {}
+  val_preds_softmax_array: {}
+  val_roc_auc_score: {}
+results_train:
+  - average_loss
+results_val:
+  - average_loss
+  - val_preds_softmax_array
+  - val_roc_auc_score
+  - multi_class_roc_auc_score
+monitored_result: val_roc_auc_score
+image_size: 256
+verbose: 1
+verbose_step: 1
+num_folds: 5
+image_col_name: image_name
+class_col_name: target
+group_kfold_split: PatientID
+paths:
+  log_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt
+  train_path: /content/train/train
+  csv_path: /content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv
+  save_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/9th-March-2021
+  model_weight_path_folder: null
+model_factory: timm
+model_name: tf_efficientnet_b2_ns
+device: auto
+augmentations_class: TorchTransforms
+augmentations_train:
+  AlbumentationsAugmentation:
+    - name: VerticalFlip
+      params:
+        p: 0.5
+    - name: HorizontalFlip
+      params:
+        p: 0.5
+    - name: RandomBrightness
+      params:
+        limit: 0.2
+        p: 0.75
+    - name: RandomContrast
+      params:
+        limit: 0.2
+        p: 0.75
+    - name: HueSaturationValue
+      params:
+        hue_shift_limit: 10
+        sat_shift_limit: 10
+        val_shift_limit: 10
+        p: 0.5
+    - name: ShiftScaleRotate
+      params:
+        shift_limit: 0.1
+        scale_limit: 0.1
+        rotate_limit: 15
+        border_mode: 0
+        p: 0.85
+    - name: Resize
+      params:
+        height: 256
+        width: 256
+        p: 1.0
+    - name: ToTensorV2
+      params:
+        p: 1.0
+  TorchTransforms:
+    - name: RandomHorizontalFlip
+    - name: RandomVerticalFlip
+    - name: AutoAugment
+    - name: ToTensor
+    - name: Normalize
+      params:
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
+  TorchToolBoxTransforms:
+    - name: DrawHair
+    - name: RandomResizedCrop
+      params:
+        size: 256
+        scale:
+        - 0.8
+        - 1.0
+    - name: RandomHorizontalFlip
+    - name: RandomVerticalFlip
+    - name: Microscope
+      params:
+        p: 0.4
+    - name: ToTensor
+    - name: Normalize
+      params:
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
+augmentations_val:
+  DiscolightAugmentation: []
+  AlbumentationsAugmentation:
+    - name: ToTensorV2
+      params:
+        p: 1.0
+  TorchTransforms:
+    - name: ToTensor
+    - name: Normalize
+      params:
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
+  TorchToolBoxTransforms:
+    - name: ToTensor
+    - name: Normalize
+      params:
+        mean:
+          - 0.485
+          - 0.456
+          - 0.406
+        std:
+          - 0.229
+          - 0.224
+          - 0.225
+
