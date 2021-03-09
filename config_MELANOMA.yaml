@@ -70,6 +70,7 @@ criterion_params:
 use_amp: True
 debug: False
 cv_schema: StratifiedKFold
+classification_type: Binary
 result_params:
   average_loss: {}
   multi_class_roc_auc_score: {}
