@@ -515,7 +515,7 @@ if __name__ == "__main__":
         #     print("new save folder created")
         #     os.makedirs("/content/reighns")
         print(COMPETITIONS[comp_name])
-        yaml_config = YAMLConfig(COMPETITIONS[comp_name])
+        yaml_config = YAMLConfig("/content/reighns/config_MELANOMA.yaml")
 
     else:
         yaml_config = YAMLConfig("./config.yaml")
