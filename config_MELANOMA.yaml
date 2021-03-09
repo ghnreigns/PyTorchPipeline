@@ -93,7 +93,7 @@ class_col_name: target
 group_kfold_split: PatientID
 paths:
   log_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/5th-Mar-V1/log.txt
-  train_path: /content/train/train
+  train_path: /content/train
   csv_path: /content/drive/My Drive/Melanoma/siim-isic-melanoma-classification/train.csv
   save_path: /content/drive/My Drive/Melanoma/weights/tf_effnet_b2_ns/9th-March-2021
   model_weight_path_folder:  /content/drive/My Drive/pretrained-weights/efficientnet
