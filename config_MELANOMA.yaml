@@ -177,7 +177,6 @@ augmentations_train:
           - 0.224
           - 0.225
 augmentations_val:
-  DiscolightAugmentation: []
   AlbumentationsAugmentation:
     - name: ToTensorV2
       params:
