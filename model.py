@@ -6,6 +6,7 @@ import torch
 import geffnet
 import timm
 from utils import rsetattr
+from activations import Swish_Module
 
 
 class CustomModel(torch.nn.Module):
@@ -54,7 +55,9 @@ class CustomModel(torch.nn.Module):
 
         # load pretrained weight that are not available on timm or geffnet; for example, when NFNet just came out, we do not have timm's pretrained weight
         if self.load_weight:
-            self.model.load_state_dict(torch.load(config.paths["pretrained_weight"]))
+            self.model.load_state_dict(
+                torch.load(config.paths["custom_pretrained_weight"])
+            )
         if self.load_url:
             # using torch hub to load url, can be beautified. https://pytorch.org/docs/stable/hub.html
             checkpoint = "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-dnf-weights/dm_nfnet_f1-fc540f82.pth"
@@ -96,13 +99,6 @@ class CustomModel(torch.nn.Module):
             getattr, last_layer_attributes, self.model
         ).in_features
         return last_layer_attributes, in_features, linear_layer
-
-
-### Problem: In timm module, some of the models have different names for the below two lines of code.
-### If model name = resnext50_32x4d, then the below should be like this.
-### n_features = self.model.fc.in_features
-### self.model.fc = nn.Linear(n_features, config.num_classes)
-### A possible approach is as follows, extracted from my friend's notebook.
 
 
 class Backbone(torch.nn.Module):

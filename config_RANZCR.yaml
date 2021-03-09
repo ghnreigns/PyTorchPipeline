@@ -115,6 +115,7 @@ paths:
   csv_path: /content/df_folds.csv
   save_path: /content/drive/My Drive/RANZCR/weights/resnet_200D/7th-Mar-V1
   model_weight_path_folder: /content/drive/My Drive/pretrained-weights/pretrained-resnet200D-weights
+  custom_pretrained_weight: /content/drive/My Drive/pretrained-weights/pretrained-resnet200D-weights/resnet200d_320_chestx.pth
 model_factory: timm
 model_name: resnet200d
 device: auto
