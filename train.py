@@ -475,11 +475,7 @@ if __name__ == "__main__":
         yaml_config = YAMLConfig("./config.yaml")
 
     if comp_name == "MELANOMA":
-        print(
-            "We are training on the {} dataset! Please check if you have used CROSS ENTROPY LOSS and changed to SOFTMAX!".format(
-                COMPETITIONS[comp_name]
-            )
-        )
+
         seed_all(seed=yaml_config.seed)
         train_csv = pd.read_csv(yaml_config.paths["csv_path"])
 
@@ -496,11 +492,7 @@ if __name__ == "__main__":
                 df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
             )  # UNCOMMENT TO TRAIN ALL FOLDS: train_loop(df_folds=df_folds, config=yaml_config)
     elif comp_name == "RANZCR":
-        print(
-            "We are training on the {} dataset! Please check if you have used BCE LOSS and changed to SIGMOID!".format(
-                COMPETITIONS[comp_name]
-            )
-        )
+
         seed_all(seed=yaml_config.seed)
         train_csv = pd.read_csv(yaml_config.paths["csv_path"])
 
