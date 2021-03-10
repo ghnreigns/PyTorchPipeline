@@ -502,7 +502,7 @@ def train_loop(
 
 if __name__ == "__main__":
     colab = True
-    comp_name = "MELANOMA"
+    comp_name = "RANZCR"
     COMPETITIONS = {
         "MELANOMA": "/content/reighns/config_MELANOMA.yaml",
         "CASSAVA": "",
@@ -515,7 +515,7 @@ if __name__ == "__main__":
             print("new save folder created")
             os.makedirs("/content/reighns")
 
-        yaml_config = YAMLConfig("/content/reighns/config_MELANOMA.yaml")
+        yaml_config = YAMLConfig(COMPETITIONS[comp_name])
 
     else:
         yaml_config = YAMLConfig("./config.yaml")
@@ -536,4 +536,21 @@ if __name__ == "__main__":
         else:
             train_all_folds = train_loop(
                 df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
+            )  # UNCOMMENT TO TRAIN ALL FOLDS: train_loop(df_folds=df_folds, config=yaml_config)
+    elif comp_name == "RANZCR":
+
+        seed_all(seed=yaml_config.seed)
+        train_csv = pd.read_csv(yaml_config.paths["csv_path"])
+
+        df_folds = make_folds(train_csv, yaml_config)
+        if yaml_config.debug:
+            df_folds = df_folds.sample(frac=0.05)
+            yaml_config.train_batch_size = 4
+            yaml_config.val_batch_size = 8
+            train_all_folds = train_loop(
+                df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
+            )
+        else:
+            train_all_folds = train_loop(
+                df_folds=df_folds, config=yaml_config, fold_num=1, train_one_fold=True
             )  # UNCOMMENT TO TRAIN ALL FOLDS: train_loop(df_folds=df_folds, config=yaml_config)

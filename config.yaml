@@ -100,6 +100,7 @@ paths:
   csv_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/input/train.csv
   save_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/saved_weights
   model_weight_path_folder: ./efficientnet-weights
+  custom_pretrained_weight: none
 model_factory: timm
 model_name: tf_efficientnet_b2_ns
 device: auto

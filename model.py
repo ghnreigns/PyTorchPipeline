@@ -55,9 +55,21 @@ class CustomModel(torch.nn.Module):
 
         # load pretrained weight that are not available on timm or geffnet; for example, when NFNet just came out, we do not have timm's pretrained weight
         if self.load_weight:
-            self.model.load_state_dict(
-                torch.load(config.paths["custom_pretrained_weight"])
-            )
+            custom_pretrained_weight_path = config.paths["custom_pretrained_weight"]
+            # self.model.load_state_dict(
+            #     torch.load(custom_pretrained_weight_path)
+            # )
+            ### Only for xray pretrained weights ###
+            state_dict = dict()
+            for k, v in torch.load(custom_pretrained_weight_path, map_location="cpu")[
+                "model"
+            ].items():
+                if k[:6] == "model.":
+                    k = k.replace("model.", "")
+                state_dict[k] = v
+            self.model.load_state_dict(state_dict)
+            ### end of xray pretrained weights ###
+
         if self.load_url:
             # using torch hub to load url, can be beautified. https://pytorch.org/docs/stable/hub.html
             checkpoint = "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-dnf-weights/dm_nfnet_f1-fc540f82.pth"

@@ -57,6 +57,7 @@ paths:
   csv_path: str()
   save_path: str()
   model_weight_path_folder: str()
+  custom_pretrained_weight: any(str())
 model_factory: enum('geffnet', 'timm')
 model_name: str()
 device: str()
