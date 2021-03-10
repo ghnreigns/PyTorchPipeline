@@ -51,6 +51,7 @@ class CustomModel(torch.nn.Module):
             model_weight_path_folder=config.paths["model_weight_path_folder"],
             model_name=config.model_name,
             pretrained=self.pretrained,
+            num_classes=11,
         )
 
         # load pretrained weight that are not available on timm or geffnet; for example, when NFNet just came out, we do not have timm's pretrained weight
