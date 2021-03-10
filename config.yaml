@@ -70,6 +70,7 @@ criterion_params:
 use_amp: False
 debug: True
 cv_schema: StratifiedKFold
+classification_type: MultiClass
 result_params:
   average_accuracy: {}
   average_loss: {}
@@ -99,7 +100,7 @@ paths:
   csv_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/input/train.csv
   save_path: C:/Users/ilove/Dropbox/Artificial Intelligence Shared/pytorch-pipeline/saved_weights
   model_weight_path_folder: ./efficientnet-weights
-model_factory: geffnet
+model_factory: timm
 model_name: tf_efficientnet_b2_ns
 device: auto
 augmentations_class: TorchTransforms

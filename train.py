@@ -511,10 +511,10 @@ if __name__ == "__main__":
     if colab is True:
         # uncomment this if you do not create new folder, else create mkdir reighns
         # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
-        # if not os.path.exists("/content/reighns"):
-        #     print("new save folder created")
-        #     os.makedirs("/content/reighns")
-        print(COMPETITIONS[comp_name])
+        if not os.path.exists("/content/reighns"):
+            print("new save folder created")
+            os.makedirs("/content/reighns")
+
         yaml_config = YAMLConfig("/content/reighns/config_MELANOMA.yaml")
 
     else:
@@ -529,7 +529,7 @@ if __name__ == "__main__":
         if yaml_config.debug:
             df_folds = df_folds.sample(frac=0.05)
             yaml_config.train_batch_size = 4
-            yaml_config.val_batch_size = 4
+            yaml_config.val_batch_size = 8
             train_all_folds = train_loop(
                 df_folds=df_folds, config=yaml_config, fold_num=5, train_one_fold=True
             )

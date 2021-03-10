@@ -11,6 +11,7 @@ import abc
 import inspect
 import time
 from enum import Enum
+import tqdm
 
 import networkx as nx
 import numpy as np
@@ -568,9 +569,10 @@ class Results(abc.ABC):
             result.reset()
 
         start_time = time.time()
-
+        bar = tqdm.auto.tqdm(loader, position=0, leave=True)
+        bar.set_description("Epoch Training")
         with self.computation_context():
-            for step, (image_ids, images, labels) in enumerate(loader):
+            for step, (image_ids, images, labels) in enumerate(bar):
 
                 # Compute all the pre-computed dependencies available
                 # to all results
