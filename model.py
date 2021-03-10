@@ -121,17 +121,37 @@ class CustomSingleHeadModel(torch.nn.Module):
         return last_layer_attributes, in_features, linear_layer
 
 
-class SingleHeadModel(nn.Module):
+class SingleHeadModel(torch.nn.Module):
     def __init__(
-        self, base_name: str = "resnext50_32x4d", out_dim: int = 11, pretrained=False
+        self,
+        base_name: str = "resnet200d",
+        out_dim: int = 11,
+        pretrained=False,
     ):
         """"""
         self.base_name = base_name
         super(SingleHeadModel, self).__init__()
 
         # # load base model
-        base_model = timm.create_model(base_name, pretrained=pretrained)
+        base_model = timm.create_model(
+            base_name, num_classes=out_dim, pretrained=pretrained
+        )
         in_features = base_model.num_features
+
+        if pretrained:
+            custom_pretrained_weight_path = config.paths["custom_pretrained_weight"]
+            # self.model.load_state_dict(
+            #     torch.load(custom_pretrained_weight_path)
+            # )
+            ### Only for xray pretrained weights ###
+            state_dict = dict()
+            for k, v in torch.load(custom_pretrained_weight_path, map_location="cpu")[
+                "model"
+            ].items():
+                if k[:6] == "model.":
+                    k = k.replace("model.", "")
+                state_dict[k] = v
+            self.model.load_state_dict(state_dict)
 
         # # remove global pooling and head classifier
         # base_model.reset_classifier(0, '')
@@ -141,12 +161,12 @@ class SingleHeadModel(nn.Module):
         self.backbone = base_model
 
         # # Single Heads.
-        self.head_fc = nn.Sequential(
-            nn.Linear(in_features, in_features),
-            # nn.ReLU(inplace=True),
+        self.head_fc = torch.nn.Sequential(
+            torch.nn.Linear(in_features, in_features),
+            # torch.nn.ReLU(inplace=True),
             Swish_Module(),
-            nn.Dropout(0.3),
-            nn.Linear(in_features, out_dim),
+            torch.nn.Dropout(0.3),
+            torch.nn.Linear(in_features, out_dim),
         )
 
     def forward(self, x):

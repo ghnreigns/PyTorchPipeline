@@ -367,7 +367,7 @@ class Trainer:
 
 def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     """Train the model on the given fold."""
-    model = CustomModel(config=config, pretrained=False, load_weight=True)
+    model = SingleHeadModel(config=config, pretrained=False, load_weight=True)
     model.to(config.device)
 
     augmentations_class = getattr(transforms, config.augmentations_class)
