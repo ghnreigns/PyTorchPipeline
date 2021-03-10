@@ -9,7 +9,7 @@ from utils import rsetattr
 from activations import Swish_Module
 
 
-class CustomModel(torch.nn.Module):
+class CustomSingleHeadModel(torch.nn.Module):
     """A custom model."""
 
     def __init__(
@@ -119,6 +119,41 @@ class CustomModel(torch.nn.Module):
             getattr, last_layer_attributes, self.model
         ).in_features
         return last_layer_attributes, in_features, linear_layer
+
+
+class SingleHeadModel(nn.Module):
+    def __init__(
+        self, base_name: str = "resnext50_32x4d", out_dim: int = 11, pretrained=False
+    ):
+        """"""
+        self.base_name = base_name
+        super(SingleHeadModel, self).__init__()
+
+        # # load base model
+        base_model = timm.create_model(base_name, pretrained=pretrained)
+        in_features = base_model.num_features
+
+        # # remove global pooling and head classifier
+        # base_model.reset_classifier(0, '')
+        base_model.reset_classifier(0)
+
+        # # Shared CNN Bacbone
+        self.backbone = base_model
+
+        # # Single Heads.
+        self.head_fc = nn.Sequential(
+            nn.Linear(in_features, in_features),
+            # nn.ReLU(inplace=True),
+            Swish_Module(),
+            nn.Dropout(0.3),
+            nn.Linear(in_features, out_dim),
+        )
+
+    def forward(self, x):
+        """"""
+        h = self.backbone(x)
+        h = self.head_fc(h)
+        return h
 
 
 class Backbone(torch.nn.Module):

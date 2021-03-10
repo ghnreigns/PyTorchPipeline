@@ -22,9 +22,10 @@ from cross_validate import make_folds
 from dataset import CustomDataset
 from dataset import CustomDataLoader
 from loss import LabelSmoothingLoss
-from model import CustomModel
+from model import CustomSingleHeadModel, SingleHeadModel
 from oof import get_oof_acc, get_oof_roc
 from utils import seed_all, seed_worker
+from scheduler import GradualWarmupSchedulerV2
 
 
 class Trainer:
@@ -44,8 +45,6 @@ class Trainer:
             print("new save folder created")
             os.makedirs(self.save_path)
 
-        # Uncomment this if needed to use different val loss #
-        # self.criterion = LabelSmoothingLoss(**config.criterion_params[config.criterion]).to(self.config.device)
         self.criterion_train = getattr(torch.nn, config.criterion_train)(
             **config.criterion_params[config.criterion_train]
         )
@@ -59,6 +58,17 @@ class Trainer:
             optimizer=self.optimizer, **config.scheduler_params[config.scheduler]
         )
 
+        # This is built upon self.scheduler, note the params in self.schedule must match number of epochs.
+        warmup_epoch = 1
+        warmup_factor = 10
+        # use initial lr divide by warmup factpr
+        scheduler_warmup = GradualWarmupSchedulerV2(
+            self.optimizer,
+            multiplier=10,
+            total_epoch=warmup_epoch,
+            after_scheduler=self.scheduler,
+        )
+
         """scaler is only used when use_amp is True, use_amp is inside config."""
         if config.use_amp:
             self.scaler = torch.cuda.amp.GradScaler()
@@ -67,35 +77,22 @@ class Trainer:
             results.construct_result(result, self.config)
             for result in self.config.results_val
         ]
-        # print(self.selected_results_val)
-        # -> [<results.average_loss object at 0x0000020CF63C67F0>, <results.average_accuracy object at 0x0000020CF63C68E0>,
-        #  <results.val_preds_softmax_array object at 0x0000020CF63C6940>, <results.val_roc_auc_score object at 0x0000020CF63C69A0>,
-        #  <results.multi_class_roc_auc_score object at 0x0000020CF63C69D0>]
 
         self.validation_results = results.ValidationResults(
             self, self.selected_results_val, self.config
         )
-        # print(self.validation_results)
-        # -> <results.ValidationResults object at 0x000001BCFA265850>
 
         self.selected_results_train = [
             results.construct_result(result, self.config)
             for result in self.config.results_train
         ]
-        # print(self.selected_results_train)
-        # -> [<results.average_loss object at 0x000001BCFA265880>, <results.average_accuracy object at 0x000001BCFA265970>,
-        #  <results.val_preds_softmax_array object at 0x000001BCFA2659D0>, <results.val_roc_auc_score object at 0x000001BCFA265A30>,
-        #  <results.multi_class_roc_auc_score object at 0x000001BCFA265A60>]
 
         self.training_results = results.TrainingResults(
             self, self.selected_results_train, self.config
         )
-        # print(self.training_results)
-        # -> <results.TrainingResults
-        # The current-known best values for selected ComparableResult
-        # validation results
+
         self.best_val_results = {}
-        # The current-known values for selected savable validation results
+
         self.saved_val_results = {}
         """https://stackoverflow.com/questions/1398674/display-the-time-in-a-different-time-zone"""
         self.date = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime(
@@ -123,20 +120,21 @@ class Trainer:
         for _epoch in range(self.config.n_epochs):
             # Getting the learning rate after each epoch!
             lr = self.optimizer.param_groups[0]["lr"]
-
+            # Step scheduler.
+            scheduler_warmup.step(_epoch)
+            ###
             timestamp = datetime.datetime.now(pytz.timezone("Asia/Singapore")).strftime(
                 "%Y-%m-%d %H-%M-%S"
             )
-            # printing the lr and the timestamp after each epoch.
+
             self.log("\n{}\nLR: {}".format(timestamp, lr))
 
-            # start time of training on the training set
             train_start_time = time.time()
-            # train one epoch on the training set
+
             train_results_computed = self.train_one_epoch(train_loader)
-            # end time of training on the training set
+
             train_end_time = time.time()
-            # formatting time to make it nicer
+
             train_elapsed_time = time.strftime(
                 "%H:%M:%S", time.gmtime(train_end_time - train_start_time)
             )
@@ -146,8 +144,7 @@ class Trainer:
                 for result in self.selected_results_train
                 if isinstance(result, results.ReportableResult)
             ]
-            # print(train_reported_results)
-            # -> ['Avg Validation Summary Loss: 0.527126', 'Validation Accuracy: 0.791667']
+
             train_result_str = " | ".join(
                 [
                     "Training Epoch: {}".format(self.epoch + 1),
@@ -165,33 +162,18 @@ class Trainer:
             
             """
             val_results_computed = self.valid_one_epoch(val_loader)
-            # print(val_results_computed)
-            # -> {'average_loss': tensor(0.1868, device='cuda:0'),
-            #     'average_accuracy': 0.95,
-            #     'val_preds_softmax_array': array([[0.985, 0.014],[0.977, 0.0229]], dtype=float32),
-            #     'val_roc_auc_score': 0.521,
-            #     'multi_class_roc_auc_score': 0.521}
-            # print(val_results_computed["val_preds_softmax_array"].shape)
+
             val_end_time = time.time()
             val_elapsed_time = time.strftime(
                 "%H:%M:%S", time.gmtime(val_end_time - val_start_time)
             )
-            ## Important addition for plotting
+
             self.loss_history.append(val_results_computed["average_loss"])
             self.monitored_metrics_history.append(
                 val_results_computed[self.config.monitored_result]
             )
-            ## end
 
-            # Save the current value of all savable validation results
-            # This for loop must be after valid one epoch for apparent reason you need the results computed.
             for result in self.selected_results_val:
-                # print(result, isinstance(result, results.SavableResult))
-                # <results.average_loss object at 0x000001B174223880> False
-                # <results.average_accuracy object at 0x000001B174223970> False
-                # <results.val_preds_softmax_array object at 0x000001B1742239D0> True
-                # <results.val_roc_auc_score object at 0x000001B174223A30> False
-                # <results.multi_class_roc_auc_score object at 0x000001B174223A60> False
 
                 if not isinstance(result, results.SavableResult):
                     continue
@@ -200,30 +182,20 @@ class Trainer:
                 savable_name = result.get_save_name(
                     val_results_computed[result.__class__.__name__]
                 )
-                # print(savable_name) -> "oof_preds" refer to results.py val_preds_softmax_array class, this signifies we want to save this.
 
-                # If savable_name is reported as None, we don't save the
-                # result value.
                 if savable_name is None:
                     continue
 
                 self.saved_val_results[savable_name] = val_results_computed[
                     result.__class__.__name__
                 ]
-                # print(len(self.saved_val_results))
-                # print(self.saved_val_results) here get the savable name oof_preds, and then get the class name to be val_preds_softmax_array
-                # ->
-                # {'oof_preds': array([[0.8899242 , 0.11007578],
-                #                      [0.72081256, 0.27918747],
-                #                      [0.68776596, 0.31223404],
-                #                      [0.7657404 , 0.23425962]}
 
             val_reported_results = [
                 result.report(val_results_computed[result.__class__.__name__])
                 for result in self.selected_results_val
                 if isinstance(result, results.ReportableResult)
             ]
-            # print(val_reported_results) - > ['Avg Validation Summary Loss: 0.035370', 'Validation Accuracy: 0.996047', 'Validation ROC: 0.261905', 'MultiClass ROC: 0.26190476190476186']
+
             val_result_str = " | ".join(
                 [
                     "Validation Epoch: {}".format(self.epoch + 1),
@@ -322,11 +294,6 @@ class Trainer:
             """End of training, epoch + 1 so that self.epoch can be updated."""
             self.epoch += 1
 
-        """
-        curr_fold_best_checkpoint: We have ended the training for the current fold/model after the configured number of 
-        epochs. We then load the best weight we have saved earlier in the training. The reason is that we want to use 
-        this checkpoint later to extract the predictions (OOF predictions).
-        """
         curr_fold_best_checkpoint = self.load(
             os.path.join(
                 self.save_path,
@@ -351,8 +318,7 @@ class Trainer:
         """Validate one training epoch."""
         # set to eval mode
         self.model.eval()
-        # print("len", len(val_loader))
-        # it is returning the method in Results class which takes in a loader
+
         return self.validation_results.compute_results(val_loader)
 
     def save_model(self, path):
@@ -415,8 +381,7 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
 
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
-    # val_df.to_csv("val_df.csv")
-    # print(len(val_df))
+
     data_dict = {
         "dataset_train_dict": {
             "df": train_df,
@@ -448,23 +413,15 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
         },
     }
 
-    # returns {"Train": train_loader, "Validation": val_loader}
     dataloader_dict = CustomDataLoader(config=config, data_dict=data_dict).get_loaders()
     train_loader, val_loader = dataloader_dict["Train"], dataloader_dict["Validation"]
     hongnan_classifier = Trainer(model=model, config=config)
-
     curr_fold_best_checkpoint = hongnan_classifier.fit(train_loader, val_loader, fold)
-    # print(len(curr_fold_best_checkpoint["oof_preds"]))
     val_df[[str(c) for c in range(config.num_classes)]] = curr_fold_best_checkpoint[
         "oof_preds"
     ]
-    # val_df["preds"] = curr_fold_best_checkpoint["oof_preds"].argmax(1)
 
     return val_df
-
-
-### Ian: Might need some help cleaning up this part, especially when my monitored metric is roc for example,
-### then it will be good to call get_oof_roc in the train_loop instead of hard coding it.
 
 
 def train_loop(
@@ -477,8 +434,6 @@ def train_loop(
     oof_df = pd.DataFrame()
     if train_one_fold:
         _oof_df = train_on_fold(df_folds=df_folds, config=config, fold=fold_num)
-        # curr_fold_best_score = get_oof_roc(config, _oof_df)
-        # print("Fold {} OOF Score is {}".format(fold_num, curr_fold_best_score))
     else:
         """The below for loop code guarantees fold starts from 1 and not 0. https://stackoverflow.com/questions/33282444/pythonic-way-to-iterate-through-a-range-starting-at-1"""
         for fold in (number + 1 for number in range(config.num_folds)):
@@ -509,8 +464,6 @@ if __name__ == "__main__":
         "RANZCR": "/content/reighns/config_RANZCR.yaml",
     }
     if colab is True:
-        # uncomment this if you do not create new folder, else create mkdir reighns
-        # yaml_config = YAMLConfig("/content/Pytorch-Pipeline/config.yaml")
         if not os.path.exists("/content/reighns"):
             print("new save folder created")
             os.makedirs("/content/reighns")

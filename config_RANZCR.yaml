@@ -16,8 +16,13 @@ class_list:
 train_batch_size: 16
 val_batch_size: 32
 n_epochs: 16
-scheduler: CosineAnnealingWarmRestarts
+scheduler: CosineAnnealingLR
 scheduler_params:
+  CosineAnnealingLR:
+    T_max: 16
+    eta_min: 1e-7
+    last_epoch: -1
+    verbose: True
   StepLR:
     step_size: 2
     gamma: 0.3
@@ -40,11 +45,11 @@ scheduler_params:
     last_epoch: -1
     verbose: True    
 train_step_scheduler: False
-val_step_scheduler: True
+val_step_scheduler: False
 optimizer: AdamW
 optimizer_params:
   AdamW:
-    lr: 2.5e-04
+    lr: 0.00002
     betas:
       - 0.9
       - 0.999
@@ -134,18 +139,43 @@ augmentations_train:
         value: 0
         mask_value: 0
         p: 0.5
+    - name: HueSaturationValue
+      params:
+        hue_shift_limit: 10
+        sat_shift_limit: 10
+        val_shift_limit: 10
+        p: 0.7
+    - name: RandomBrightnessContrast
+      params:
+        brightness_limit: (-0.2, 0.2)
+        contrast_limit: (-0.2, 0.2)
+        p: 0.7
+    - name: CLAHE
+      params:
+        clip_limit: (1,4)
+        p: 0.5
+    - name: JpegCompression
+      params:
+        p: 0.2
+    - name: IAAPiecewiseAffine
+      params:
+        p: 0.2
+    - name: IAASharpen
+      params:
+        p: 0.2
+    - name: Cutout
+      params: 
+        # use int(image_size * 0.1)
+        max_h_size: 64
+        max_w_size: 64
+        num_holes: 5
+        p: 0.5
     - name: RandomResizedCrop
       params:
         height: 640
         width: 640
         scale: [0.9, 1.0]
         p: 1.0
-    - name: Cutout
-      params: 
-        max_h_size: 51
-        max_w_size: 51
-        num_holes: 5
-        p: 0.5
     - name: Normalize
       params:
         mean: [0.4887381077884414]

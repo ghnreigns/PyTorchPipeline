@@ -92,8 +92,14 @@ class CustomDataset(torch.utils.data.Dataset):
                 "{}{}".format(image_id, self.image_extension),
             )
 
-        image = cv2.imread(image_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # image = cv2.imread(image_path)
+        # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Specific for this competition, preprocess to remove black borders
+        image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        mask = image > 0
+        image = image[np.ix_(mask.any(1), mask.any(0))]
+        image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+        ###
 
         if not self.transform_norm:
             image = image.astype(np.float32) / 255.0

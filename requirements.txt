@@ -5,4 +5,5 @@ torchvision==0.8.2
 -U git+https://github.com/albu/albumentations --no-cache-dir
 torchtoolbox==0.1.5
 tqdm
+git+https://github.com/ildoonet/pytorch-gradual-warmup-lr.git
 # pip install -r requirements.txt
