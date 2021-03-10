@@ -117,7 +117,7 @@ paths:
   model_weight_path_folder: /content/drive/My Drive/pretrained-weights/pretrained-densenet-weights
   custom_pretrained_weight: /content/drive/My Drive/pretrained-weights/pretrained-densenet-weights/densenet121_chestx.pth
 model_factory: timm
-model_name: resnet200d
+model_name: densenet121
 device: auto
 augmentations_class: AlbumentationsAugmentation
 augmentations_train:
@@ -136,8 +136,8 @@ augmentations_train:
         p: 0.5
     - name: RandomResizedCrop
       params:
-        height: 512
-        width: 512
+        height: 640
+        width: 640
         scale: [0.9, 1.0]
         p: 1.0
     - name: Cutout
@@ -158,8 +158,8 @@ augmentations_val:
   AlbumentationsAugmentation:
     - name: Resize
       params:
-        height: 512
-        width: 512
+        height: 640
+        width: 640
         p: 1.0
     - name: Normalize
       params:
