@@ -382,8 +382,11 @@ def train_on_fold(df_folds: pd.DataFrame, config, fold: int):
     train_df = df_folds[df_folds["fold"] != fold].reset_index(drop=True)
     val_df = df_folds[df_folds["fold"] == fold].reset_index(drop=True)
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
+=======
+>>>>>>> parent of 51c2bf4 (1)
     val_df.to_csv("val_df.csv")
     # print(len(val_df))
 >>>>>>> parent of 51c2bf4 (1)
