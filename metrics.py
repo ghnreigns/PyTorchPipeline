@@ -49,15 +49,4 @@ def multiclass_roc(y_true, y_preds_softmax_array, config):
     average out the 11 roc scores for each image.
     """
     avg_roc_score = np.mean(roc_scores, axis=None)
-
-    def macro_multilabel_auc(y_true, y_preds_softmax_array):
-        aucs = []
-        for i in range(len(target_cols)):
-            aucs.append(
-                sklearn.metrics.roc_auc_score(y_true[:, i], y_preds_softmax_array[:, i])
-            )
-        macro_mean_auc = np.mean(aucs)
-        print("macro multi label mean auc", macro_mean_auc)
-        return macro_mean_auc
-
     return roc_auc, avg_roc_score
