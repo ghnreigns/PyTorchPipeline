@@ -13,8 +13,8 @@ class_list:
   - 8
   - 9
   - 10
-train_batch_size: 32
-val_batch_size: 64
+train_batch_size: 16
+val_batch_size: 32
 n_epochs: 16
 scheduler: CosineAnnealingWarmRestarts
 scheduler_params:
