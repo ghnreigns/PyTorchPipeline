@@ -55,6 +55,9 @@ class CustomModel(torch.nn.Module):
 
         # load pretrained weight that are not available on timm or geffnet; for example, when NFNet just came out, we do not have timm's pretrained weight
         if self.load_weight:
+            print(
+                "Loading CUSTOM PRETRAINED WEIGHTS, IF YOU DID NOT CHOOSE THIS, PLEASE RESTART!"
+            )
             custom_pretrained_weight_path = config.paths["custom_pretrained_weight"]
             # self.model.load_state_dict(
             #     torch.load(custom_pretrained_weight_path)
